@@ -3,3 +3,10 @@ set -eu
 
 npm run build
 npm test
+
+# The build just ran; if it changed the committed page, what is being pushed is stale.
+# CI checks this too, but failing here costs a rebuild rather than a red build on main.
+if [ -n "$(git status --porcelain -- dist/graph.html)" ]; then
+  echo "dist/graph.html is stale; commit the rebuilt page before pushing" >&2
+  exit 1
+fi
