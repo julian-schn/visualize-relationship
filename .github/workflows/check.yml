@@ -36,8 +36,8 @@ jobs:
       - name: Validate when available
         run: npm run validate --if-present
 
-      - name: Test when available
-        run: npm test --if-present
+      - name: Test
+        run: npm test
 
       - name: Build when available
         run: npm run build --if-present
