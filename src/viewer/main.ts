@@ -124,7 +124,7 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     style: cytoscapeStyle(),
     // Layout is applied per render; an unlaid-out graph flashes before dagre runs.
     layout: { name: "preset" },
-    wheelSensitivity: 0.2,
+    maxZoom: 1.6,
   });
 
   const motionOk = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -147,10 +147,13 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     return {
       name: "fcose",
       quality: "proof",
-      randomize: false,
+      // Elements are rebuilt each render, so there are no previous positions to refine from.
+      // With randomize off, fcose starts every node at the same spot and cannot separate them.
+      randomize: true,
       // Closeness and shared context shorten edges, which is what makes clusters appear.
       idealEdgeLength,
-      nodeSeparation: 90,
+      nodeSeparation: 140,
+      nodeRepulsion: 12000,
       animate: motionOk,
       animationDuration: 240,
       fit: true,
@@ -172,6 +175,8 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
 
     cy.elements().remove();
     cy.add([...nodes, ...edges]);
+    canvas.dataset["nodes"] = String(nodes.length);
+    canvas.dataset["edges"] = String(edges.length);
     cy.layout(layoutFor(state.mode)).run();
 
     renderTrail();
@@ -180,6 +185,7 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
   function setMode(mode: Mode): void {
     if (state.mode === mode) return;
     state.mode = mode;
+    cy.style(cytoscapeStyle(mode));
     lineageButton.classList.toggle("current", mode === "lineage");
     socialButton.classList.toggle("current", mode === "social");
     // The focus person is deliberately untouched: section 11.2 keeps it across the switch.
