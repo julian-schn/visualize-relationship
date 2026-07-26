@@ -1,6 +1,7 @@
 import cytoscape from "cytoscape";
 import dagre from "cytoscape-dagre";
 import fcose from "cytoscape-fcose";
+import svg from "cytoscape-svg";
 import type { CompiledGraph, CompiledPerson } from "../build/compile.ts";
 import { DEFAULT_DEPTH, MAX_DEPTH, MIN_DEPTH, egoGraph } from "./ego.ts";
 import { elementsFor, type Mode } from "./elements.ts";
@@ -11,14 +12,17 @@ import {
   type FilterOptions,
   type Filters,
 } from "./filters.ts";
+import type { Lang } from "../kinship/terms.ts";
 import { relate } from "../kinship/relate.ts";
 import { contextFor, ribbonMidpoint, ribbonNodes } from "./ribbon.ts";
 import { searchPeople } from "./search.ts";
 import { yearRangeOf } from "./timeline.ts";
-import { cytoscapeStyle, idealEdgeLength } from "./theme.ts";
+import { cytoscapeStyle, idealEdgeLength, tokensFor, type Appearance } from "./theme.ts";
 
 cytoscape.use(dagre);
 cytoscape.use(fcose);
+// Section 11.3 asks for SVG as well as PNG. cy.png() is built in; vector is not.
+cytoscape.use(svg);
 
 /**
  * Reads the graph the build inlined. There is no fetch here and there must never be one:
@@ -40,6 +44,10 @@ interface State {
   relateTo: string | null;
   /** The year the scrubber is parked on, or null for the whole record. */
   year: number | null;
+  lang: Lang;
+  showUncertain: boolean;
+  showEnded: boolean;
+  distinguishAdoptive: boolean;
   /** Previously focused people, most recent last. Section 11.3's breadcrumb trail. */
   trail: string[];
 }
@@ -79,6 +87,10 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     filters: noFilters(),
     relateTo: null,
     year: null,
+    lang: "en",
+    showUncertain: true,
+    showEnded: true,
+    distinguishAdoptive: false,
     trail: [],
   };
 
@@ -147,6 +159,20 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
   scrubber.append(scrubToggle, scrubYear, scrubValue);
   if (span === null) scrubber.hidden = true;
 
+  const viewPanel = el("details", "filters view");
+  viewPanel.append(el("summary", undefined, "View"));
+  const viewBody = el("div", "filter-body");
+  viewPanel.append(viewBody);
+
+  const exports = el("div", "modes");
+  exports.setAttribute("role", "group");
+  exports.setAttribute("aria-label", "Export");
+  const pngButton = el("button", "mode", "PNG");
+  const svgButton = el("button", "mode", "SVG");
+  pngButton.type = "button";
+  svgButton.type = "button";
+  exports.append(pngButton, svgButton);
+
   const trail = el("nav", "trail");
   trail.setAttribute("aria-label", "Recently focused");
 
@@ -154,12 +180,15 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
   const card = el("aside", "card");
   card.hidden = true;
 
-  bar.append(search, modes, relateButton, depthLabel, scrubber, filterPanel);
+  bar.append(search, modes, relateButton, depthLabel, scrubber, filterPanel, viewPanel, exports);
   root.append(bar, results, trail, canvas, term, hops, card);
+
+  const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  const appearance = (): Appearance => (darkQuery.matches ? "dark" : "light");
 
   const cy = cytoscape({
     container: canvas,
-    style: cytoscapeStyle(),
+    style: cytoscapeStyle("lineage", appearance()),
     // Layout is applied per render; an unlaid-out graph flashes before dagre runs.
     layout: { name: "preset" },
     maxZoom: 1.6,
@@ -242,7 +271,10 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     clearRibbon();
     if (state.relateTo === null) return;
 
-    const found = relate(kinship, state.focus, state.relateTo, { lang: "en" });
+    const found = relate(kinship, state.focus, state.relateTo, {
+      lang: state.lang,
+      distinguishNotByBirth: state.distinguishAdoptive,
+    });
     const people = ribbonNodes(state.focus, found.path ?? []);
 
     // --- the answer in words ---------------------------------------------
@@ -322,7 +354,7 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     // A relate query may reach outside the shell. Pulling those people in is the whole
     // point: a ribbon that runs off the edge of the picture answers nothing.
     if (state.relateTo !== null) {
-      const found = relate(kinship, state.focus, state.relateTo);
+      const found = relate(kinship, state.focus, state.relateTo, { lang: state.lang });
       for (const id of ribbonNodes(state.focus, found.path ?? [])) {
         if (ego.ids.has(id)) continue;
         ego.ids.add(id);
@@ -334,6 +366,8 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
       mode: state.mode,
       filters: state.filters,
       year: state.year,
+      showUncertain: state.showUncertain,
+      showEnded: state.showEnded,
     });
 
     cy.elements().remove();
@@ -350,7 +384,7 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
   function setMode(mode: Mode): void {
     if (state.mode === mode) return;
     state.mode = mode;
-    cy.style(cytoscapeStyle(mode));
+    cy.style(cytoscapeStyle(mode, appearance()));
     lineageButton.classList.toggle("current", mode === "lineage");
     socialButton.classList.toggle("current", mode === "social");
     // The focus person is deliberately untouched: section 11.2 keeps it across the switch.
@@ -496,6 +530,72 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     card.hidden = true;
   });
 
+  function buildViewToggles(): void {
+    const rows: [string, keyof State, boolean][] = [
+      ["Uncertain parentage", "showUncertain", true],
+      ["Ended ties", "showEnded", true],
+      ["Mark adoptive kin", "distinguishAdoptive", false],
+    ];
+
+    const group = el("fieldset", "filter-group");
+    group.append(el("legend", undefined, "Show"));
+
+    for (const [label, key, on] of rows) {
+      const row = el("label", "filter-row");
+      const box = el("input");
+      box.type = "checkbox";
+      box.checked = on;
+      box.addEventListener("change", () => {
+        (state[key] as boolean) = box.checked;
+        render();
+      });
+      row.append(box, el("span", undefined, label));
+      group.append(row);
+    }
+
+    const langGroup = el("fieldset", "filter-group");
+    langGroup.append(el("legend", undefined, "Kin terms"));
+    for (const [code, label] of [["en", "English"], ["de", "Deutsch"]] as [Lang, string][]) {
+      const row = el("label", "filter-row");
+      const pick = el("input");
+      pick.type = "radio";
+      pick.name = "lang";
+      pick.checked = code === "en";
+      pick.addEventListener("change", () => {
+        state.lang = code;
+        drawRibbon();
+      });
+      row.append(pick, el("span", undefined, label));
+      langGroup.append(row);
+    }
+
+    viewBody.append(group, langGroup);
+  }
+
+  /** Cytoscape paints to canvas, so it cannot follow the CSS media query on its own. */
+  darkQuery.addEventListener("change", () => {
+    cy.style(cytoscapeStyle(state.mode, appearance()));
+  });
+
+  function download(name: string, href: string): void {
+    const link = el("a");
+    link.download = name;
+    link.href = href;
+    link.click();
+  }
+
+  pngButton.addEventListener("click", () => {
+    // Section 12 forbids the page reaching the network; a data URI never leaves it.
+    download("graph.png", cy.png({ full: false, scale: 2, bg: tokensFor(appearance()).ground }));
+  });
+
+  svgButton.addEventListener("click", () => {
+    const withSvg = cy as unknown as { svg?: (options: object) => string };
+    if (withSvg.svg === undefined) return;
+    const markup = withSvg.svg({ full: false, scale: 1, bg: tokensFor(appearance()).ground });
+    download("graph.svg", `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(markup)))}`);
+  });
+
   scrubToggle.addEventListener("click", () => {
     const arming = state.year === null;
     scrubToggle.classList.toggle("current", arming);
@@ -536,6 +636,24 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
       return;
     }
 
+    if (event.key === "f") {
+      event.preventDefault();
+      const hovered = cy.nodes(".hover").first();
+      if (hovered.nonempty()) focusOn(String(hovered.id()));
+      return;
+    }
+
+    // Arrows walk the shell: up towards parents, down towards children, left and right
+    // around the people at the same remove.
+    if (event.key.startsWith("Arrow")) {
+      const next = stepFrom(event.key);
+      if (next !== null) {
+        event.preventDefault();
+        focusOn(next);
+      }
+      return;
+    }
+
     if (event.key === "/") {
       event.preventDefault();
       search.focus();
@@ -560,7 +678,31 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
   lineageButton.addEventListener("click", () => setMode("lineage"));
   socialButton.addEventListener("click", () => setMode("social"));
 
+  /** The person an arrow key should move to, or null when there is nobody that way. */
+  function stepFrom(key: string): string | null {
+    const here = byId.get(state.focus);
+    if (here === undefined) return null;
+
+    if (key === "ArrowUp") return (here.parents ?? [])[0]?.id ?? null;
+    if (key === "ArrowDown") return (graph.childrenOf[state.focus] ?? [])[0] ?? null;
+
+    // Siblings, in the order the compiled graph lists them.
+    const parent = (here.parents ?? [])[0]?.id;
+    const siblings = (parent === undefined ? [] : (graph.childrenOf[parent] ?? [])).filter(
+      (id) => id !== state.focus,
+    );
+    if (siblings.length === 0) return null;
+
+    return key === "ArrowLeft" ? (siblings[siblings.length - 1] ?? null) : (siblings[0] ?? null);
+  }
+
+  cy.on("mouseover", "node", (event) => {
+    cy.nodes().removeClass("hover");
+    event.target.addClass("hover");
+  });
+
   buildFilters();
+  buildViewToggles();
   render();
 }
 

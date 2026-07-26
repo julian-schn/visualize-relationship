@@ -23,6 +23,20 @@ function withoutInlinedData(html: string): string {
   );
 }
 
+/**
+ * XML namespace names look like URLs and are not. They identify a vocabulary, nothing ever
+ * requests them, and a page carrying them opens offline exactly as well as one without. SVG
+ * export cannot be written without them, so they are named here rather than the rule being
+ * loosened to "http is fine".
+ */
+const NAMESPACES = new Set([
+  "http://www.w3.org/2000/svg",
+  "http://www.w3.org/1999/xlink",
+  "http://www.w3.org/2000/xmlns/",
+  "http://www.w3.org/1999/xhtml",
+  "http://www.w3.org/XML/1998/namespace",
+]);
+
 export function verifyOffline(html: string): Violation[] {
   const violations: Violation[] = [];
   const markup = withoutInlinedData(html);
@@ -53,6 +67,7 @@ export function verifyOffline(html: string): Violation[] {
 
   const url = /https?:\/\/[^\s"'`<>)]+/g;
   for (const match of code.matchAll(url)) {
+    if (NAMESPACES.has(match[0])) continue;
     violations.push({ rule: "no-remote-url", detail: `${match[0].slice(0, 60)} is a remote URL` });
   }
 

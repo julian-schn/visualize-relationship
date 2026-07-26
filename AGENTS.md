@@ -485,6 +485,11 @@ The build must end by asserting `dist/graph.html` contains no `fetch(`, no exter
 and no `http://` or `https://` references outside of comments. If it does, the build failed,
 regardless of what esbuild said.
 
+One exception, and only this one: XML namespace names such as `http://www.w3.org/2000/svg`.
+They identify a vocabulary rather than a location, nothing ever requests them, and SVG export
+cannot be written without them. They are listed by name in `src/build/verify.ts` rather than
+the rule being relaxed to allow `http` generally.
+
 ### 12.3 Output in git
 
 `dist/graph.html` is committed so the graph can be opened straight from a clone. The build
@@ -703,4 +708,4 @@ Each milestone ends with green validation, green tests and one or more commits.
 10. **Agent tooling**: `find`, `inbox:apply`, `agent:maintenance`, report generators.
 11. **Polish**: keyboard shortcuts, exports, dark mode, reduced motion.
 
-Milestones 0 through 10 are done.
+Milestones 0 through 11 are done. The build order is complete.
