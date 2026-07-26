@@ -81,43 +81,31 @@ If you want to swap any of these, write a proposal (section 13.3) first.
 ## 4. Repo layout
 
 ```
-AGENTS.md              this file
-CLAUDE.md              symlink to AGENTS.md
-README.md              short human-facing intro, generated-ish, keep it current
-package.json
+AGENTS.md              this file; CLAUDE.md is a symlink to it
+README.md              short human-facing intro, under 30 lines
 
 people/                one JSON file per person, filename = <id>.json
 unions/                one JSON file per union, filename = <id>.json
 relations/             one JSON file per social relation, filename = <id>.json
 notes/                 optional markdown sidecars, filename = <person-id>.md
 vocab.json             controlled vocabulary for every enum-ish field
+schema/                JSON Schema per record type, and for vocab.json
 
-schema/                JSON Schema files
-  person.schema.json
-  union.schema.json
-  relation.schema.json
-  vocab.schema.json
-
-src/
-  model/               types, loaders, id helpers
-  kinship/             derivation engine (see section 8)
-  validate/            validation rules (see section 10)
-  viewer/              the single-page app
-  build/               compile + inline pipeline
-  agent/               maintenance, dedup, report generators
-
-inbox/                 raw unstructured input dropped by the human
-  processed/           raw input after it has been ingested
-  staged/              agent-produced patch files awaiting apply
-
-suggestions/           agent-authored maintenance findings, dated markdown
-proposals/             schema/vocab change proposals, numbered markdown
-migrations/            versioned, reversible data migrations
+src/model/             types, loaders, id helpers, date parser
+src/kinship/           derivation engine (section 8)
+src/validate/          validation rules (section 10)
+src/build/             compile + inline pipeline (section 12)
 
 .githooks/             git hooks (section 15)
 .github/workflows/     CI (section 15)
 dist/                  committed build output; see 12.3
 ```
+
+Directories arrive with the milestone that needs them rather than sitting empty:
+`src/viewer/` and `src/agent/`, and `inbox/` with `processed/` and `staged/`, plus
+`suggestions/`, `proposals/` and `migrations/` for the agent workflow in section 13. The
+loader and the validator both treat a missing directory as empty, so nothing breaks while
+they do not exist.
 
 ---
 
@@ -166,91 +154,40 @@ Fix the engine, do not corrupt the data.
 }
 ```
 
-Field notes:
+Every field-level rule lives in the `description` of that field in `schema/person.schema.json`,
+and the validator enforces it. Read the schema before writing records. What follows is only
+what a schema cannot say.
 
-- `names.nicknames` contains familiar or shortened personal names. `names.aka` is reserved
-  for other aliases, public names or identities that are neither nicknames nor former names.
-  Both are optional arrays of unique, non-empty strings and both participate in search.
-- `pronouns` is an optional ordered array of free, non-empty strings such as `["she/her"]`
-  or `["she/her", "they/them"]`. Order expresses preference. Pronouns are displayed exactly
-  as written and are not controlled vocabulary. They are the only gender a record carries,
-  they are shown rather than interpreted, and they never pick a kinship term (see section 8).
-- `status`: `living` | `deceased` | `unknown` | `merged`. `merged` is reserved for
-  duplicate tombstones and requires `mergedInto`; it is never used for an active person.
-- `parents` is an array of 0..n. Order is not meaningful. `kind` comes from `vocab.parentKind`:
-  `birth`, `adoptive`, `step`, `foster`, `guardian`, `donor`, `unknown`.
-- `confidence`: `certain` | `probable` | `uncertain`. Rendering dashes uncertain edges.
-  This is the only provenance-ish field we keep. There is deliberately no `sources` field.
-- `notes` is markdown. If the note is longer than roughly 20 lines, move it to
-  `notes/<id>.md` and drop the inline field. The loader merges both, sidecar wins.
-- `meta.author` is `human` or `agent`. Agents must set it honestly.
+- `names.nicknames` and `names.aka` are separate on purpose. A shortened personal name and
+  a public identity are different things and collapsing them loses that.
+- `pronouns` is the only gender a record carries. It is displayed, never interpreted, and
+  never picks a kinship term; see section 8.
+- `confidence` is the only provenance we keep. Sources and evidence are out of scope, so
+  there is deliberately no `sources` field to grow into one.
 
 ### 5.2 Union
 
-`unions/<id>.json`
+`unions/<id>.json`. Partnerships only, 1..n partners. One is legal for a single parent or an
+unknown other party; three or more is legal and gets no special casing anywhere.
 
-Partnerships only. Children are **not** listed here; parentage lives on the child. This
-diverges from GEDCOM on purpose: it survives messy and partial data much better.
-
-```json
-{
-  "id": "u-0001",
-  "partners": ["agnes-vogt", "karl-hoffmann"],
-  "type": "marriage",
-  "from": "1988-06-11",
-  "to": "2004",
-  "endReason": "divorce",
-  "note": ""
-}
-```
-
-- `partners` is 1..n. One partner is legal (single parent, unknown other party). Three or
-  more is legal (polyamorous or communal arrangements). No special-casing anywhere.
-- `type` from `vocab.unionType`: `marriage`, `civil-partnership`, `partnership`,
-  `engagement`, `liaison`, `unknown`.
-- `endReason` from `vocab.unionEnd`: `divorce`, `separation`, `death`, `annulment`,
-  `drift`, `unknown`, or `null` while ongoing.
-
-Step-relations, half-siblings and in-laws all fall out of unions plus parentage. Do not
-store them.
+Children are not listed here. That diverges from GEDCOM deliberately: parentage on the child
+survives partial and messy data, where a family record does not. Step-relations,
+half-siblings and in-laws all fall out of unions plus parentage, so none of them are stored.
 
 ### 5.3 Relation
 
-`relations/<id>.json`
+`relations/<id>.json`. Elective and social ties, and where the interesting data lives.
 
-Elective and social ties. This is where the interesting data lives.
+**Asymmetry is a feature.** Two people can hold different views of the same tie: model that
+as two separate relations, both `symmetric: false`, with different `type` and `closeness`.
+The validator must not complain about this.
 
-```json
-{
-  "id": "r-0132",
-  "type": "friend",
-  "from": "julian",
-  "to": "pat",
-  "symmetric": true,
-  "closeness": 4,
-  "since": "2019",
-  "until": null,
-  "status": "active",
-  "context": ["discord"],
-  "note": ""
-}
-```
+**Never delete a relation because it ended.** People fall out and come back. Set `status`
+and the `until` date. An ex-friend is `status: ended` with an `until`, exactly as an
+ex-partner is a union with a `to` and an `endReason`.
 
-- `symmetric: true` means the tie is mutual and direction is meaningless. Render undirected.
-- `symmetric: false` means `from` holds the role toward `to`. Mentor, rival, admirer,
-  benefactor, one-sided attachment. **Asymmetry is a feature.** Two people can hold different
-  views of the same tie: model that as two separate relations with different `type` and
-  `closeness`, both `symmetric: false`. The validator must not complain about this.
-- `closeness` is 0..5, optional. Drives edge weight in the force layout.
-- `status` from `vocab.relationStatus`: `active`, `dormant`, `estranged`, `ended`, `unknown`.
-  **Never delete a relation because it ended.** People fall out and come back. Set the status
-  and the `until` date. An ex-friend is `status: ended` with an `until`, exactly as an
-  ex-partner is a union with a `to` and an `endReason`.
-- `endReason` from `vocab.relationEnd`, or `null` while ongoing. Separate from `status`,
-  which records only *that* a tie ended. It has its own vocabulary rather than sharing
-  `unionEnd`, because a friendship does not end by divorce or annulment.
-- `context` is free-ish tags from `vocab.context`: `school`, `work`, `discord`, `music`,
-  `childhood`, and so on. Additions are allowed under the provisional rule in 5.4.
+`endReason` has its own vocabulary rather than sharing `unionEnd`, because a friendship does
+not end by divorce or annulment.
 
 ### 5.4 Vocabulary
 
@@ -650,26 +587,7 @@ Rules:
 7. Body explains *why*, never *what*. The diff already says what.
 8. Breaking schema changes use `!` and a `BREAKING CHANGE:` footer.
 
-Examples:
-
-```
-data(people): add Agnes Vogt and link maternal line
-
-Three people from inbox/2026-07-26-reunion.md. Karl's birth year is
-approximate, the note only said "just after the war".
-
-Agent-Run: a7f3
-```
-
-```
-feat(kinship): derive step and in-law terms
-
-Previously only blood relations resolved to a term, so anything through
-a union fell back to "related". Adds union traversal with a separate
-cost so blood paths still win.
-
-Agent-Run: a7f3
-```
+The commits in this repository are the examples; read `git log`.
 
 **Branching**: work on `main` directly for data. Use `agent/<topic>` branches for anything
 touching schema or more than 10 records, and let the human merge.
