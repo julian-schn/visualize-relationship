@@ -110,6 +110,27 @@ export function cytoscapeStyle(mode: "lineage" | "social" = "lineage"): Styleshe
       style: { width: 1 },
     },
     {
+      // The ribbon. Section 11.4's one loud moment, so everything else stays quiet.
+      // edge.ribbon, not .ribbon: width on a node makes it three pixels wide, and the
+      // person collapses to a bar.
+      selector: "edge.ribbon",
+      style: { "line-color": SIGNAL, width: 3, "target-arrow-color": SIGNAL },
+    },
+    {
+      selector: "node.ribbon",
+      style: { "border-color": SIGNAL, "border-width": 2, color: SIGNAL },
+    },
+    {
+      selector: "node.ribbon[kind = 'union']",
+      style: { "background-color": SIGNAL },
+    },
+    {
+      // Hops not yet revealed are laid out but not drawn, so the reveal reads as one line
+      // arriving rather than several appearing at once.
+      selector: "edge.ribbon-pending",
+      style: { "line-opacity": 0 },
+    },
+    {
       selector: "edge[kind = 'relation'][?ended]",
       style: { "line-style": "dotted", "line-color": DORMANT },
     },

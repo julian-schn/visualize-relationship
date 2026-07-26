@@ -282,3 +282,45 @@ body {
   background: var(--ground);
   border: 1px solid var(--ink);
 }
+
+/* Section 11.4's signature moment: the derived term, set large, on the ribbon's midpoint.
+   Nothing else on the page is allowed to be this loud. */
+.term {
+  position: absolute;
+  z-index: 4;
+  transform: translate(-50%, -50%);
+  padding: 0.1rem 0.5rem;
+  background: var(--ground);
+  color: var(--signal);
+  font-family: var(--display);
+  font-size: clamp(1.25rem, 3.5vw, 2.25rem);
+  line-height: 1.1;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.term-aside {
+  display: block;
+  color: var(--dormant);
+  font-family: var(--label);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.hops {
+  position: absolute;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 3;
+  max-width: 20rem;
+  margin: 0;
+  padding: 0.6rem 0.9rem 0.6rem 2rem;
+  background: var(--ground);
+  border: 1px solid var(--rule);
+  color: var(--dormant);
+  font-size: 0.85em;
+}
+
+.hops li + li {
+  margin-top: 0.15rem;
+}
