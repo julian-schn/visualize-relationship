@@ -146,7 +146,6 @@ Fix the engine, do not corrupt the data.
     "former": [{ "display": "Agnes Bauer", "until": "2014" }]
   },
   "pronouns": ["she/her"],
-  "sex": "f",
   "birth": { "date": "1962-03-04", "place": "Stuttgart" },
   "death": { "date": null, "place": null },
   "status": "living",
@@ -168,9 +167,8 @@ Field notes:
   Both are optional arrays of unique, non-empty strings and both participate in search.
 - `pronouns` is an optional ordered array of free, non-empty strings such as `["she/her"]`
   or `["she/her", "they/them"]`. Order expresses preference. Pronouns are displayed exactly
-  as written, are not controlled vocabulary, and are never inferred from `sex`.
-- `sex` is optional and exists only because pedigree charts conventionally shape nodes by it.
-  It is not identity. Allowed: `f`, `m`, `x`, `unknown`, or omitted.
+  as written and are not controlled vocabulary. They are the only gender a record carries,
+  they are shown rather than interpreted, and they never pick a kinship term (see section 8).
 - `status`: `living` | `deceased` | `unknown` | `merged`. `merged` is reserved for
   duplicate tombstones and requires `mergedInto`; it is never used for an active person.
 - `parents` is an array of 0..n. Order is not meaningful. `kind` comes from `vocab.parentKind`:
@@ -324,7 +322,7 @@ ancestors, compute the (up, down) distance pair, then map that pair to a term:
 - `(1,0)` parent, `(0,1)` child
 - `(1,1)` sibling; full if both parents shared, half if one
 - `(2,0)` grandparent, `(2,2)` first cousin, `(3,2)` first cousin once removed, and so on
-- `(2,1)` aunt or uncle, `(1,2)` niece or nephew
+- `(2,1)` parent's sibling, `(1,2)` sibling's child
 
 Then layer on the non-blood cases:
 
@@ -336,9 +334,15 @@ Then layer on the non-blood cases:
 - **Chosen family**: a social relation, never a computed kin term, but it should show up in
   the "how are we related" answer as a separate line
 
-**Term tables** live in `src/kinship/terms.<lang>.ts`. Ship `en` and `de`. German needs the
-gendered forms and distinguishes some things English collapses; do not machine-translate the
-English table, write it properly.
+**Terms are gender-neutral.** A record carries no gender except `pronouns`, which is free
+text meant to be displayed rather than interpreted, so there is nothing to derive a gendered
+term from and the engine does not try. `(1,1)` is *sibling*, never brother or sister.
+
+**Term tables** live in `src/kinship/terms.<lang>.ts`. Ship `en` and `de`; do not
+machine-translate the English table, write it properly. German has no neutral singular for
+parts of the collateral line, so where a neutral form exists it is used (`Elternteil`,
+`Geschwisterteil`, `Enkelkind`) and where none does the paired form stands in
+(`Tante oder Onkel`). Never guess a gender to avoid the pairing.
 
 **Path finding.** Shortest path between two nodes across all edge types, with type-weighted
 costs so blood lines are preferred over "friend of a friend of a cousin". Returns an ordered

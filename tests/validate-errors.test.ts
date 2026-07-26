@@ -119,7 +119,7 @@ describe("schema errors", () => {
 
   it("skips later rules for a record that failed its schema", () => {
     const broken = personFile("wrong-name");
-    (broken.record as unknown as Record<string, unknown>)["sex"] = "female";
+    (broken.record as unknown as Record<string, unknown>)["status"] = "alive";
 
     // The filename disagrees with the id too, but the record never reaches that rule.
     expect(rules({ people: [broken] })).toEqual(["schema"]);

@@ -51,14 +51,10 @@
       }
     },
     "pronouns": {
-      "description": "Ordered list of pronoun sets, most preferred first. Free text, not controlled vocabulary. Displayed exactly as written and never inferred from sex.",
+      "description": "Ordered list of pronoun sets, most preferred first. Free text, not controlled vocabulary, displayed exactly as written. The only gender the record carries, and it is never used to pick a kinship term.",
       "type": "array",
       "minItems": 1,
       "items": { "$ref": "#/$defs/nonEmptyString" }
-    },
-    "sex": {
-      "description": "Present only because pedigree charts conventionally shape nodes by it. Not identity, and never a source for pronouns.",
-      "enum": ["f", "m", "x", "unknown"]
     },
     "birth": { "$ref": "#/$defs/event" },
     "death": { "$ref": "#/$defs/event" },

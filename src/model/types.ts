@@ -1,6 +1,5 @@
 export type Confidence = "certain" | "probable" | "uncertain";
 export type PersonStatus = "living" | "deceased" | "unknown" | "merged";
-export type Sex = "f" | "m" | "x" | "unknown";
 export type Author = "human" | "agent";
 
 export interface FormerName {
@@ -38,7 +37,6 @@ export interface Person {
   id: string;
   names: Names;
   pronouns?: string[];
-  sex?: Sex;
   birth?: LifeEvent;
   death?: LifeEvent;
   status: PersonStatus;
