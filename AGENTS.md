@@ -333,6 +333,15 @@ Then layer on the non-blood cases:
   via a display toggle.
 - **Chosen family**: a social relation, never a computed kin term, but it should show up in
   the "how are we related" answer as a separate line
+- **Ended ties**: a union with a `to` or an `endReason` gives an ex-partner and a former
+  step-relation. `endReason: death` is the exception and gives neither. A widowed person is
+  a *late partner*, not an ex, and a step-parent stays one when the parent dies. Getting
+  this wrong is worse than staying silent, so the three states are distinct in the term
+  tables rather than collapsed into a boolean.
+
+Ties are read in order and the first match wins: blood before elective, and within elective,
+partner before step before in-law. Someone who is both a partner and a sibling-in-law gets
+the nearer word, and two step-siblings who also share an ancestor are half-siblings.
 
 **Terms are gender-neutral.** A record carries no gender except `pronouns`, which is free
 text meant to be displayed rather than interpreted, so there is nothing to derive a gendered
