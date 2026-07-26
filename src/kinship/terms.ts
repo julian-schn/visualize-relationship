@@ -39,5 +39,3 @@ export interface TermTable {
   unrelated: string;
   self: string;
 }
-
-export const ORDINALS_NEEDED = 8;

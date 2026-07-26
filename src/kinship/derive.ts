@@ -130,7 +130,3 @@ export function kinshipBetween(parentage: Parentage, a: string, b: string): Kins
   return best;
 }
 
-/** Whether an ancestor path passes only through birth edges. */
-export function isBloodRelated(kinship: Kinship | null): boolean {
-  return kinship !== null && kinship.byBirth;
-}

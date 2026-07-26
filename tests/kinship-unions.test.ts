@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import { parentageOf } from "../src/kinship/derive.ts";
 import { de } from "../src/kinship/terms.de.ts";
 import { en } from "../src/kinship/terms.en.ts";
-import { electiveTieBetween, partnerState, unionIndexOf } from "../src/kinship/unions.ts";
+import {
+  electiveContextOf,
+  electiveTieBetween,
+  partnerState,
+  unionIndexOf,
+} from "../src/kinship/unions.ts";
 import { buildGraph } from "../src/model/graph.ts";
 import type { ParentEdge, Person, Union, Vocab } from "../src/model/types.ts";
 
@@ -24,6 +29,10 @@ function person(id: string, parents: ParentEdge[] = []): Person {
   return { id, names: { display: id }, status: "living", parents, meta };
 }
 
+function born(id: string, date: string, parents: ParentEdge[] = []): Person {
+  return { ...person(id, parents), birth: { date } };
+}
+
 const birth = (id: string): ParentEdge => ({ id, kind: "birth" });
 
 function union(id: string, partners: string[], extra: Partial<Union> = {}): Union {
@@ -32,12 +41,12 @@ function union(id: string, partners: string[], extra: Partial<Union> = {}): Unio
 
 function context(people: Person[], unions: Union[]) {
   const graph = buildGraph({ people, unions, relations: [], vocab });
-  return { parentage: parentageOf(graph), unions: unionIndexOf(graph) };
+  const parentage = parentageOf(graph);
+  return electiveContextOf(graph, parentage, unionIndexOf(graph));
 }
 
 function tie(people: Person[], unions: Union[], a: string, b: string) {
-  const { parentage, unions: index } = context(people, unions);
-  return electiveTieBetween(parentage, index, a, b);
+  return electiveTieBetween(context(people, unions), a, b);
 }
 
 describe("partners", () => {
@@ -157,6 +166,65 @@ describe("step relations", () => {
     const remarried = [union("u-0001", ["mum", "dad"]), union("u-0002", ["mum", "other"])];
 
     expect(tie(halfs, remarried, "kid", "half")).toBeNull();
+  });
+});
+
+describe("step ties that never overlapped", () => {
+  // The union ended in 2004; the child arrived in 2010 by a different partner.
+  const people = [
+    person("mum"),
+    person("ex"),
+    person("later-partner"),
+    born("kid", "2010-05-01", [birth("mum"), birth("later-partner")]),
+  ];
+  const unions = [
+    union("u-0001", ["mum", "ex"], { to: "2004", endReason: "divorce" }),
+    union("u-0002", ["mum", "later-partner"], { from: "2008" }),
+  ];
+
+  it("does not make a parent's earlier ex into a former step-parent", () => {
+    expect(tie(people, unions, "kid", "ex")).toBeNull();
+  });
+
+  it("does not make the child their step-child either", () => {
+    expect(tie(people, unions, "ex", "kid")).toBeNull();
+  });
+
+  it("still finds a step-parent when the union outlived the birth", () => {
+    const overlapping = [
+      union("u-0001", ["mum", "ex"], { to: "2015", endReason: "divorce" }),
+      union("u-0002", ["mum", "later-partner"], { from: "2008" }),
+    ];
+
+    expect(tie(people, overlapping, "kid", "ex")).toEqual({
+      kind: "step",
+      relation: "parent",
+      ended: true,
+    });
+  });
+
+  it("stays permissive when the birth date is unknown", () => {
+    const undated = [person("mum"), person("ex"), person("kid", [birth("mum")])];
+    expect(tie(undated, [union("u-0001", ["mum", "ex"], { to: "2004" })], "kid", "ex")).toMatchObject(
+      { kind: "step", relation: "parent" },
+    );
+  });
+
+  it("stays permissive when the union has no end date", () => {
+    const openEnded = [union("u-0001", ["mum", "ex"], { endReason: "divorce" })];
+    expect(tie(people, openEnded, "kid", "ex")).toMatchObject({ kind: "step" });
+  });
+
+  it("does not make step-siblings of children who never overlapped", () => {
+    const twoHouseholds = [
+      person("mum"),
+      person("ex"),
+      born("kid", "2010-05-01", [birth("mum")]),
+      born("exs-kid", "2012-01-01", [birth("ex")]),
+    ];
+    const longOver = [union("u-0001", ["mum", "ex"], { to: "2004", endReason: "divorce" })];
+
+    expect(tie(twoHouseholds, longOver, "kid", "exs-kid")).toBeNull();
   });
 });
 
