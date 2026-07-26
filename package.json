@@ -1,0 +1,27 @@
+{
+  "name": "visualize-relationship",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A private, local-first graph of family and social relationships.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "hooks:install": "git config core.hooksPath .githooks",
+    "prepare": "npm run hooks:install",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ajv": "8.20.0",
+    "cytoscape": "3.34.0",
+    "cytoscape-dagre": "4.0.0",
+    "cytoscape-fcose": "2.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.43",
+    "esbuild": "0.28.1",
+    "typescript": "7.0.2",
+    "vitest": "4.1.10"
+  }
+}
