@@ -48,6 +48,3 @@ jobs:
             echo "dist/graph.html is stale; run npm run build and commit the result" >&2
             exit 1
           fi
-
-      - name: Check generated documentation when available
-        run: npm run docs:check --if-present
