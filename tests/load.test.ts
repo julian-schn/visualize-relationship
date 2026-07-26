@@ -13,6 +13,7 @@ const vocab = {
   unionType: [{ key: "marriage", label: "Marriage" }],
   unionEnd: [],
   relationStatus: [{ key: "active", label: "Active" }],
+  relationEnd: [],
   context: [],
   tag: [],
 };

@@ -23,7 +23,15 @@ const vocab: Vocab = {
   ],
   unionType: [{ key: "marriage", label: "Marriage" }],
   unionEnd: [{ key: "divorce", label: "Divorce" }],
-  relationStatus: [{ key: "active", label: "Active" }],
+  relationStatus: [
+    { key: "active", label: "Active" },
+    { key: "ended", label: "Ended" },
+    { key: "estranged", label: "Estranged" },
+  ],
+  relationEnd: [
+    { key: "drift", label: "Drift" },
+    { key: "falling-out", label: "Falling out" },
+  ],
   context: [{ key: "work", label: "Work" }],
   tag: [{ key: "maternal-side", label: "Maternal side" }],
 };
@@ -308,6 +316,37 @@ describe("vocabulary", () => {
     });
 
     expect(findings.filter((f) => f.rule === "unknown-vocabulary")).toHaveLength(4);
+  });
+
+  it("reports an unknown relation end reason", () => {
+    expect(
+      rules({
+        people: [personFile("a"), personFile("b")],
+        relations: [
+          relationFile("r-0001", { status: "ended", until: "2023", endReason: "ghosted" }),
+        ],
+      }),
+    ).toContain("unknown-vocabulary");
+  });
+
+  it("accepts an ex-friend with a known end reason", () => {
+    expect(
+      rules({
+        people: [personFile("a"), personFile("b")],
+        relations: [
+          relationFile("r-0001", { status: "ended", until: "2023", endReason: "falling-out" }),
+        ],
+      }),
+    ).toEqual([]);
+  });
+
+  it("accepts a null end reason on an ongoing relation", () => {
+    expect(
+      rules({
+        people: [personFile("a"), personFile("b")],
+        relations: [relationFile("r-0001", { endReason: null })],
+      }),
+    ).toEqual([]);
   });
 
   it("accepts a null end reason on an ongoing union", () => {

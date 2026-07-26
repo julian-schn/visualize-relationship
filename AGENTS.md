@@ -404,6 +404,7 @@ agent diligence. Agents forget; CI does not.
 
 - Child's earliest birth is before a parent's latest birth, or less than 12 years after
 - Death before birth; union start after union end
+- A relation that names an end reason while still marked active
 - Union or relation dated after a participant's death
 - `status: living` but birth is more than 110 years ago
 - Person with no relations of any kind (an island)

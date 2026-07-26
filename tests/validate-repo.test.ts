@@ -109,6 +109,7 @@ describe("validateRepo", () => {
       unionType: [{ key: "marriage", label: "Marriage" }],
       unionEnd: [],
       relationStatus: [{ key: "active", label: "Active" }],
+      relationEnd: [{ key: "drift", label: "Drift" }],
       context: [{ key: "climbing", label: "Climbing", provisional: true, added: "2026-01-01" }],
       tag: [],
     });
@@ -133,6 +134,7 @@ describe("validateRepo", () => {
       unionType: [{ key: "marriage", label: "Marriage" }],
       unionEnd: [],
       relationStatus: [{ key: "active", label: "Active" }],
+      relationEnd: [{ key: "drift", label: "Drift" }],
       context: [{ key: "climbing", label: "Climbing", provisional: true, added: "2026-01-01" }],
       tag: [],
     });

@@ -103,6 +103,23 @@ function checkOrdering(context: WarningContext): Finding[] {
   return findings;
 }
 
+/** Warning: a relation that says why it ended while also saying it has not. */
+function checkEndedContradictions(context: WarningContext): Finding[] {
+  return context.relations.flatMap((file) => {
+    const endReason = file.record.endReason;
+    if (endReason === undefined || endReason === null) return [];
+    if (file.record.status !== "active") return [];
+
+    return [
+      warning(
+        "active-with-end-reason",
+        file.path,
+        `${file.record.id} is active but records why it ended (${endReason})`,
+      ),
+    ];
+  });
+}
+
 /** Warning: a union or relation dated after a participant died. */
 function checkPosthumousTies(context: WarningContext): Finding[] {
   const deathOf = new Map<string, ParsedDate | null>();
@@ -262,6 +279,7 @@ export function checkWarnings(context: WarningContext): Finding[] {
   return [
     ...checkParentAges(context),
     ...checkOrdering(context),
+    ...checkEndedContradictions(context),
     ...checkPosthumousTies(context),
     ...checkImplausibleAge(context),
     ...checkConnectivity(context),

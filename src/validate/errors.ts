@@ -169,6 +169,7 @@ function checkVocabulary(records: ValidRecords): Finding[] {
   const unionEnd = keysOf(vocab.unionEnd);
   const relationType = keysOf(vocab.relationType);
   const relationStatus = keysOf(vocab.relationStatus);
+  const relationEnd = keysOf(vocab.relationEnd);
   const context = keysOf(vocab.context);
 
   const require = (value: string, allowed: Set<string>, list: string, where: string): void => {
@@ -195,6 +196,12 @@ function checkVocabulary(records: ValidRecords): Finding[] {
   for (const file of records.relations) {
     require(file.record.type, relationType, "relationType", file.path);
     require(file.record.status, relationStatus, "relationStatus", file.path);
+
+    const endReason = file.record.endReason;
+    if (endReason !== undefined && endReason !== null) {
+      require(endReason, relationEnd, "relationEnd", file.path);
+    }
+
     for (const value of file.record.context ?? []) require(value, context, "context", file.path);
   }
 

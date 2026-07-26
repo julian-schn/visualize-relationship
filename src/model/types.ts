@@ -70,6 +70,7 @@ export interface Relation {
   since?: string | null;
   until?: string | null;
   status: string;
+  endReason?: string | null;
   context?: string[];
   note?: string;
 }
@@ -93,6 +94,7 @@ export interface Vocab {
   unionType: VocabEntry[];
   unionEnd: VocabEntry[];
   relationStatus: VocabEntry[];
+  relationEnd: VocabEntry[];
   context: VocabEntry[];
   tag: VocabEntry[];
 }

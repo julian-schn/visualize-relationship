@@ -12,6 +12,7 @@ const vocab: Vocab = {
   unionType: [{ key: "marriage", label: "Marriage" }],
   unionEnd: [{ key: "divorce", label: "Divorce" }],
   relationStatus: [{ key: "active", label: "Active" }],
+  relationEnd: [{ key: "drift", label: "Drift" }, { key: "falling-out", label: "Falling out" }],
   context: [],
   tag: [],
 };
@@ -161,6 +162,49 @@ describe("ordering", () => {
         unions: [unionFile("u-0001", { partners: ["a", "b"], from: "1988", to: null })],
       }),
     ).not.toContain("union-ends-before-it-starts");
+  });
+});
+
+describe("ended relations", () => {
+  it("warns when an active relation says why it ended", () => {
+    expect(
+      warn({
+        ...connectedPair(),
+        relations: [relationFile("r-0001", { from: "a", to: "b", endReason: "drift" })],
+      }),
+    ).toContain("active-with-end-reason");
+  });
+
+  it("accepts an ended relation with a reason", () => {
+    expect(
+      warn({
+        ...connectedPair(),
+        relations: [
+          relationFile("r-0001", {
+            from: "a",
+            to: "b",
+            status: "ended",
+            until: "2023",
+            endReason: "falling-out",
+          }),
+        ],
+      }),
+    ).not.toContain("active-with-end-reason");
+  });
+
+  it("accepts an estranged relation with a reason", () => {
+    expect(
+      warn({
+        ...connectedPair(),
+        relations: [
+          relationFile("r-0001", { from: "a", to: "b", status: "estranged", endReason: "falling-out" }),
+        ],
+      }),
+    ).not.toContain("active-with-end-reason");
+  });
+
+  it("says nothing about an active relation with no reason", () => {
+    expect(warn(connectedPair())).not.toContain("active-with-end-reason");
   });
 });
 

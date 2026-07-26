@@ -22,6 +22,7 @@ export function vocabularyKeys(vocab: Vocab): string[] {
     ...vocab.unionType,
     ...vocab.unionEnd,
     ...vocab.relationStatus,
+    ...vocab.relationEnd,
     ...vocab.context,
     ...vocab.tag,
   ].map((entry) => entry.key);
