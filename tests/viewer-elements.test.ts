@@ -274,6 +274,91 @@ describe("scaffolding keeps partners level", () => {
   });
 });
 
+describe("circle mode", () => {
+  const people = [
+    person("me", [{ id: "mum", kind: "birth" }]),
+    person("mum"),
+    person("pal"),
+  ];
+  const relations = [
+    {
+      id: "r-0001",
+      type: "friend",
+      from: "me",
+      to: "pal",
+      symmetric: true,
+      status: "active",
+    },
+  ];
+
+  const graph = compile(buildGraph({ people, unions: [], relations, vocab }));
+
+  it("shows a friend, where lineage shows only kin", () => {
+    const circle = elementsFor(
+      graph,
+      egoGraph(graph, "me", { depth: 2, kinds: ["parentage", "union", "relation"] }),
+      { mode: "circle" },
+    );
+    const lineage = elementsFor(graph, egoGraph(graph, "me", { depth: 2 }), { mode: "lineage" });
+
+    expect(circle.nodes.map((node) => node.data.id)).toContain("pal");
+    expect(lineage.nodes.map((node) => node.data.id)).not.toContain("pal");
+  });
+
+  it("puts the term under the name", () => {
+    const { nodes } = elementsFor(
+      graph,
+      egoGraph(graph, "me", { depth: 2, kinds: ["parentage", "union", "relation"] }),
+      { mode: "circle", terms: new Map([["mum", "parent"], ["pal", "Friend"]]) },
+    );
+
+    const mum = nodes.find((node) => node.data.id === "mum")?.data;
+    expect(mum?.term).toBe("parent");
+    expect(mum?.caption).toBe("mum\nparent");
+  });
+
+  it("leaves the focus without a term, being the person everything relates to", () => {
+    const { nodes } = elementsFor(
+      graph,
+      egoGraph(graph, "me", { depth: 2, kinds: ["parentage", "union", "relation"] }),
+      { mode: "circle", terms: new Map([["me", "should be ignored"]]) },
+    );
+
+    const me = nodes.find((node) => node.data.id === "me")?.data;
+    expect(me?.term).toBeNull();
+    expect(me?.caption).toBe("me");
+  });
+
+  it("falls back to the bare name when no term was supplied", () => {
+    const { nodes } = elementsFor(
+      graph,
+      egoGraph(graph, "me", { depth: 2, kinds: ["parentage", "union", "relation"] }),
+      { mode: "circle" },
+    );
+
+    expect(nodes.find((node) => node.data.id === "mum")?.data.caption).toBe("mum");
+  });
+
+  it("joins partners directly rather than through a marriage point", () => {
+    const couple = compile(
+      buildGraph({
+        people: [person("a"), person("b")],
+        unions: [{ id: "u-0001", partners: ["a", "b"], type: "marriage" }],
+        relations: [],
+        vocab,
+      }),
+    );
+
+    const { nodes } = elementsFor(
+      couple,
+      egoGraph(couple, "a", { depth: 2, kinds: ["parentage", "union", "relation"] }),
+      { mode: "circle" },
+    );
+
+    expect(nodes.filter((node) => node.data.kind === "union")).toHaveLength(0);
+  });
+});
+
 describe("element ids", () => {
   it("are unique, which cytoscape requires", () => {
     const graph = graphOf(

@@ -84,7 +84,7 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
   const state: State = {
     focus: graph.people[0]?.id ?? "",
     depth: DEFAULT_DEPTH,
-    mode: "lineage",
+    mode: "circle",
     filters: noFilters(),
     relateTo: null,
     year: null,
@@ -120,11 +120,11 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
   const modes = el("div", "modes");
   modes.setAttribute("role", "group");
   modes.setAttribute("aria-label", "Layout");
-  const lineageButton = el("button", "mode current", "Lineage");
+  const circleButton = el("button", "mode current", "Circle");
+  const lineageButton = el("button", "mode", "Lineage");
   const socialButton = el("button", "mode", "Social");
-  lineageButton.type = "button";
-  socialButton.type = "button";
-  modes.append(lineageButton, socialButton);
+  for (const button of [circleButton, lineageButton, socialButton]) button.type = "button";
+  modes.append(circleButton, lineageButton, socialButton);
 
   const filterPanel = el("details", "filters");
   const filterSummary = el("summary", undefined, "Filters");
@@ -189,7 +189,9 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
 
   const cy = cytoscape({
     container: canvas,
-    style: cytoscapeStyle("lineage", appearance()),
+    // The default mode, not a hardcoded one: circle draws curves, lineage draws taxi
+    // corners, and starting on the wrong sheet gives the default view the wrong edges.
+    style: cytoscapeStyle(state.mode, appearance()),
     // Layout is applied per render; an unlaid-out graph flashes before dagre runs.
     layout: { name: "preset" },
     maxZoom: 1.6,
@@ -216,6 +218,23 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
         animationDuration: 180,
         fit: true,
         padding: 32,
+      } as unknown as cytoscape.LayoutOptions;
+    }
+
+    if (mode === "circle") {
+      return {
+        name: "fcose",
+        quality: "proof",
+        randomize: true,
+        idealEdgeLength,
+        nodeSeparation: 160,
+        nodeRepulsion: 14000,
+        // The focus is the thing everything is relative to, so it holds the middle.
+        fixedNodeConstraint: [{ nodeId: state.focus, position: { x: 0, y: 0 } }],
+        animate: motionOk,
+        animationDuration: 240,
+        fit: true,
+        padding: 40,
       } as unknown as cytoscape.LayoutOptions;
     }
 
@@ -346,7 +365,8 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
   }
 
   function render(): void {
-    const kinds = state.mode === "social" ? (["parentage", "union", "relation"] as const) : undefined;
+    const kinds =
+      state.mode === "lineage" ? undefined : (["parentage", "union", "relation"] as const);
     const ego = egoGraph(graph, state.focus, {
       depth: state.depth,
       ...(kinds === undefined ? {} : { kinds: [...kinds] }),
@@ -363,8 +383,21 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
       }
     }
 
+    const terms = new Map<string, string>();
+    for (const id of ego.ids) {
+      if (id === state.focus || !byId.has(id)) continue;
+      const found = relate(kinship, state.focus, id, {
+        lang: state.lang,
+        distinguishNotByBirth: state.distinguishAdoptive,
+      });
+      // A path with no word for it says "connected", which is more use than a blank line.
+      const term = found.term ?? (found.path === null ? null : "connected");
+      if (term !== null) terms.set(id, term);
+    }
+
     const { nodes, edges } = elementsFor(graph, ego, {
       mode: state.mode,
+      terms,
       filters: state.filters,
       year: state.year,
       showUncertain: state.showUncertain,
@@ -375,6 +408,12 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     cy.add([...nodes, ...edges]);
     canvas.dataset["nodes"] = String(nodes.length);
     canvas.dataset["edges"] = String(edges.length);
+    // Who is actually drawn, so a check can assert content rather than counts. Counts prove
+    // elements were added; only the ids prove the right people were.
+    canvas.dataset["people"] = nodes
+      .filter((node) => node.data.kind === "person")
+      .map((node) => node.data.id)
+      .join(" ");
     const layout = cy.layout(layoutFor(state.mode));
     layout.one("layoutstop", () => {
       if (state.mode === "lineage") reseat();
@@ -422,6 +461,7 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     if (state.mode === mode) return;
     state.mode = mode;
     cy.style(cytoscapeStyle(mode, appearance()));
+    circleButton.classList.toggle("current", mode === "circle");
     lineageButton.classList.toggle("current", mode === "lineage");
     socialButton.classList.toggle("current", mode === "social");
     // The focus person is deliberately untouched: section 11.2 keeps it across the switch.
@@ -600,7 +640,8 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
       pick.checked = code === "en";
       pick.addEventListener("change", () => {
         state.lang = code;
-        drawRibbon();
+        // Not just the ribbon: every node carries a term now, and they are built in render.
+        render();
       });
       row.append(pick, el("span", undefined, label));
       langGroup.append(row);
@@ -712,6 +753,7 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     if (state.relateTo !== null) placeTerm(ribbonNodes(state.focus, relate(kinship, state.focus, state.relateTo).path ?? []));
   });
 
+  circleButton.addEventListener("click", () => setMode("circle"));
   lineageButton.addEventListener("click", () => setMode("lineage"));
   socialButton.addEventListener("click", () => setMode("social"));
 

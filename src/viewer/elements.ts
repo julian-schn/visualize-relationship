@@ -3,7 +3,12 @@ import type { Ego } from "./ego.ts";
 import { descendantsOf, personPasses, relationPasses, type Filters } from "./filters.ts";
 import { presenceAt, relationActiveAt, unionActiveAt } from "./timeline.ts";
 
-export type Mode = "lineage" | "social";
+/**
+ * `circle` is the default: one person in the middle and everyone else labelled with what
+ * they are to them. Lineage and social answer how the graph is shaped; circle answers who
+ * these people are to this one person, which is what the tool was started for.
+ */
+export type Mode = "lineage" | "social" | "circle";
 
 export interface NodeData {
   id: string;
@@ -11,6 +16,10 @@ export interface NodeData {
   distance: number;
   focus: boolean;
   deceased: boolean;
+  /** What this person is to the focus. Null on the focus, who is the thing being related to. */
+  term: string | null;
+  /** What the node actually draws: the name, and the term beneath it when there is one. */
+  caption: string;
   /**
    * A union scaffolding node exists only so dagre ranks partners together. It is never a
    * person, is not in the data, and nothing may focus or hover it.
@@ -55,6 +64,12 @@ export interface ElementOptions {
   /** Section 11.3's toggles. Hiding is the caller's choice; the data is unchanged. */
   showUncertain?: boolean;
   showEnded?: boolean;
+  /**
+   * Derived kin and social terms, keyed by person. Passed in rather than computed: this
+   * module stays pure, and the caller already holds the kinship context and knows which
+   * language and toggles are in force.
+   */
+  terms?: ReadonlyMap<string, string>;
 }
 
 const INACTIVE = new Set(["ended", "estranged"]);
@@ -108,6 +123,10 @@ export function elementsFor(
     if (presence === "unborn") continue;
 
     visible.add(person.id);
+
+    const term =
+      ego.distance.get(person.id) === 0 ? null : (options.terms?.get(person.id) ?? null);
+
     nodes.push({
       data: {
         id: person.id,
@@ -115,6 +134,8 @@ export function elementsFor(
         distance: ego.distance.get(person.id) ?? 0,
         focus: ego.distance.get(person.id) === 0,
         deceased: presence === null ? person.status === "deceased" : presence === "dead",
+        term,
+        caption: term === null ? person.names.display : `${person.names.display}\n${term}`,
         kind: "person",
       },
     });
@@ -160,6 +181,8 @@ export function elementsFor(
         distance: 0,
         focus: false,
         deceased: false,
+        term: null,
+        caption: "",
         kind: "union",
       },
     });
@@ -245,8 +268,8 @@ export function elementsFor(
     }
   }
 
-  // Social mode has no ranks to protect, so partners join directly.
-  if (options.mode === "social") {
+  // Neither force layout has ranks to protect, so partners join directly.
+  if (options.mode !== "lineage") {
     for (const union of graph.unions) {
       if (year !== null && !unionActiveAt(union, year)) continue;
       if (!showEnded && hasEnded(union)) continue;
@@ -280,7 +303,7 @@ export function elementsFor(
     }
   }
 
-  if (options.mode === "social") {
+  if (options.mode === "social" || options.mode === "circle") {
     for (const relation of graph.relations) {
       if (!inside(relation.from) || !inside(relation.to)) continue;
       if (filters !== undefined && !relationPasses(relation, filters)) continue;

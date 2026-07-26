@@ -386,11 +386,18 @@ force-directed hairball of 400 people is a screenshot, not a tool.
 
 ### 11.2 Modes
 
+- **Circle mode**, the default: the focus person's whole neighbourhood, family and social
+  together, with every other node labelled by what that person *is* to them — first cousin,
+  ex-partner, step-parent, best friend. `cytoscape-fcose`, because a friendship has no
+  generation and would distort a ranked tree. This is the view the project exists for: the
+  other two answer how the graph is shaped, this one answers who these people are to someone.
+  Terms come from the same `relate()` the ribbon uses, so there is one derivation, not two.
 - **Lineage mode**: layered DAG via `cytoscape-dagre`, rank = generation, top to bottom.
   This is what a family tree is supposed to look like. Force layouts butcher it.
 - **Social mode**: `cytoscape-fcose`, edge weight from `closeness`, clusters by shared context.
 
-Switching modes keeps the focus person and animates between layouts.
+Switching modes keeps the focus person and animates between layouts. Lineage and social carry
+the term line too; it is the same annotation, and it costs nothing to keep it.
 
 Rank is generation. A union gets a marriage point one rank below its partners, both of whom
 point at it, which forces them level; the couple's children hang off that point. The node
