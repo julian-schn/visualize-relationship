@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "relationType": [
+    { "key": "friend", "label": "Friend", "symmetric": true },
+    { "key": "best-friend", "label": "Best friend", "symmetric": true },
+    { "key": "acquaintance", "label": "Acquaintance", "symmetric": true },
+    { "key": "colleague", "label": "Colleague", "symmetric": true },
+    { "key": "mentor", "label": "Mentor", "symmetric": false, "inverse": "mentee" },
+    { "key": "mentee", "label": "Mentee", "symmetric": false, "inverse": "mentor" },
+    { "key": "rival", "label": "Rival", "symmetric": false },
+    { "key": "chosen-family", "label": "Chosen family", "symmetric": true }
+  ],
+  "parentKind": [
+    { "key": "birth", "label": "Birth" },
+    { "key": "adoptive", "label": "Adoptive" },
+    { "key": "step", "label": "Step" },
+    { "key": "foster", "label": "Foster" },
+    { "key": "guardian", "label": "Guardian" },
+    { "key": "donor", "label": "Donor" },
+    { "key": "unknown", "label": "Unknown" }
+  ],
+  "unionType": [
+    { "key": "marriage", "label": "Marriage" },
+    { "key": "civil-partnership", "label": "Civil partnership" },
+    { "key": "partnership", "label": "Partnership" },
+    { "key": "engagement", "label": "Engagement" },
+    { "key": "liaison", "label": "Liaison" },
+    { "key": "unknown", "label": "Unknown" }
+  ],
+  "unionEnd": [
+    { "key": "divorce", "label": "Divorce" },
+    { "key": "separation", "label": "Separation" },
+    { "key": "death", "label": "Death" },
+    { "key": "annulment", "label": "Annulment" },
+    { "key": "drift", "label": "Drift" },
+    { "key": "unknown", "label": "Unknown" }
+  ],
+  "relationStatus": [
+    { "key": "active", "label": "Active" },
+    { "key": "dormant", "label": "Dormant" },
+    { "key": "estranged", "label": "Estranged" },
+    { "key": "ended", "label": "Ended" },
+    { "key": "unknown", "label": "Unknown" }
+  ],
+  "context": [
+    { "key": "school", "label": "School" },
+    { "key": "university", "label": "University" },
+    { "key": "work", "label": "Work" },
+    { "key": "discord", "label": "Discord" },
+    { "key": "music", "label": "Music" },
+    { "key": "childhood", "label": "Childhood" },
+    { "key": "neighbourhood", "label": "Neighbourhood" }
+  ],
+  "tag": []
+}
