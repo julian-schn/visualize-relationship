@@ -1,5 +1,8 @@
 import type { CompiledGraph } from "../build/compile.ts";
 import type { Ego } from "./ego.ts";
+import { descendantsOf, personPasses, relationPasses, type Filters } from "./filters.ts";
+
+export type Mode = "lineage" | "social";
 
 export interface NodeData {
   id: string;
@@ -13,13 +16,17 @@ export interface EdgeData {
   id: string;
   source: string;
   target: string;
-  kind: "parentage" | "union";
+  kind: "parentage" | "union" | "relation";
   /** Parentage below `certain`, which section 11.4 renders dashed. */
   uncertain: boolean;
   /** Parentage that is not a birth edge, which gets the notch glyph. */
   notByBirth: boolean;
-  /** A union that has ended, drawn broken. */
+  /** A union or relation that has ended, drawn broken. */
   ended: boolean;
+  /** 0..5 where known. Drives line thickness and how hard fcose pulls. */
+  closeness: number | null;
+  /** Shared context count, so a force layout can cluster on it. */
+  contexts: number;
 }
 
 export interface Elements {
@@ -27,16 +34,38 @@ export interface Elements {
   edges: { data: EdgeData }[];
 }
 
-/**
- * The shell as cytoscape elements. Only what is inside the ego shell is emitted: section
- * 11.1 means the layout engine should never be handed the whole graph in the first place.
- */
-export function elementsFor(graph: CompiledGraph, ego: Ego): Elements {
-  const inside = (id: string): boolean => ego.ids.has(id);
+export interface ElementOptions {
+  mode: Mode;
+  filters?: Filters;
+}
 
-  const nodes = graph.people
-    .filter((person) => inside(person.id))
-    .map((person) => ({
+const INACTIVE = new Set(["ended", "estranged"]);
+
+/**
+ * The shell as cytoscape elements. Only what is inside the ego shell and past the filters is
+ * emitted: section 11.1 means the layout engine should never be handed the whole graph.
+ *
+ * Lineage mode draws kinship only. Social mode adds elective ties, because "how do we know
+ * each other" and "how are we related" are different questions over the same records.
+ */
+export function elementsFor(
+  graph: CompiledGraph,
+  ego: Ego,
+  options: ElementOptions = { mode: "lineage" },
+): Elements {
+  const filters = options.filters;
+  const branchMembers =
+    filters?.branch != null ? descendantsOf(graph, filters.branch) : null;
+
+  const visible = new Set<string>();
+  const nodes: { data: NodeData }[] = [];
+
+  for (const person of graph.people) {
+    if (!ego.ids.has(person.id)) continue;
+    if (filters !== undefined && !personPasses(person, filters, branchMembers)) continue;
+
+    visible.add(person.id);
+    nodes.push({
       data: {
         id: person.id,
         label: person.names.display,
@@ -44,8 +73,10 @@ export function elementsFor(graph: CompiledGraph, ego: Ego): Elements {
         focus: ego.distance.get(person.id) === 0,
         deceased: person.status === "deceased",
       },
-    }));
+    });
+  }
 
+  const inside = (id: string): boolean => visible.has(id);
   const edges: { data: EdgeData }[] = [];
 
   for (const person of graph.people) {
@@ -62,6 +93,8 @@ export function elementsFor(graph: CompiledGraph, ego: Ego): Elements {
           uncertain: edge.confidence !== undefined && edge.confidence !== "certain",
           notByBirth: edge.kind !== "birth" && edge.kind !== "unknown",
           ended: false,
+          closeness: null,
+          contexts: 0,
         },
       });
     }
@@ -89,9 +122,32 @@ export function elementsFor(graph: CompiledGraph, ego: Ego): Elements {
             uncertain: false,
             notByBirth: false,
             ended,
+            closeness: null,
+            contexts: 0,
           },
         });
       }
+    }
+  }
+
+  if (options.mode === "social") {
+    for (const relation of graph.relations) {
+      if (!inside(relation.from) || !inside(relation.to)) continue;
+      if (filters !== undefined && !relationPasses(relation, filters)) continue;
+
+      edges.push({
+        data: {
+          id: `r:${relation.id}`,
+          source: relation.from,
+          target: relation.to,
+          kind: "relation",
+          uncertain: false,
+          notByBirth: false,
+          ended: INACTIVE.has(relation.status),
+          closeness: relation.closeness ?? null,
+          contexts: relation.context?.length ?? 0,
+        },
+      });
     }
   }
 

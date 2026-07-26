@@ -80,5 +80,38 @@ export function cytoscapeStyle(): StylesheetStyle[] {
       selector: "edge[kind = 'union'][?ended]",
       style: { "line-style": "dotted", "line-color": DORMANT },
     },
+    {
+      // Social ties are a single line whose thickness is closeness, per section 11.4.
+      selector: "edge[kind = 'relation']",
+      style: {
+        "curve-style": "bezier",
+        "line-color": RULE,
+        width: "mapData(closeness, 0, 5, 0.5, 3)",
+      },
+    },
+    {
+      selector: "edge[kind = 'relation'][closeness = null]",
+      style: { width: 1 },
+    },
+    {
+      selector: "edge[kind = 'relation'][?ended]",
+      style: { "line-style": "dotted", "line-color": DORMANT },
+    },
   ] as StylesheetStyle[];
+}
+
+/**
+ * Closeness and shared context both shorten an edge, so people who are close, or who know
+ * each other from several places, settle nearer together. fCoSE has no cluster parameter;
+ * pulling harder on the edges that mean more is how the grouping emerges.
+ */
+export function idealEdgeLength(edge: { data(key: string): unknown }): number {
+  const closeness = edge.data("closeness");
+  const contexts = edge.data("contexts");
+
+  const base = edge.data("kind") === "relation" ? 150 : 90;
+  const pull = (typeof closeness === "number" ? closeness : 2) * 14;
+  const shared = (typeof contexts === "number" ? contexts : 0) * 12;
+
+  return Math.max(40, base - pull - shared);
 }
