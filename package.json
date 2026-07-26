@@ -22,6 +22,7 @@
     "cytoscape-fcose": "2.2.0"
   },
   "devDependencies": {
+    "@types/cytoscape-dagre": "^2.3.4",
     "@types/node": "20.19.43",
     "esbuild": "0.28.1",
     "typescript": "7.0.2",

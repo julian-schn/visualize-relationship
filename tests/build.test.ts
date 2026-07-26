@@ -1,4 +1,4 @@
-import { cp, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -32,6 +32,8 @@ beforeEach(async () => {
   await cp(join(process.cwd(), "src/model"), join(root, "src/model"), { recursive: true });
   await cp(join(process.cwd(), "src/kinship"), join(root, "src/kinship"), { recursive: true });
   await cp(join(process.cwd(), "vocab.json"), join(root, "vocab.json"));
+  // The viewer bundle imports cytoscape; symlinking beats copying tens of megabytes per test.
+  await symlink(join(process.cwd(), "node_modules"), join(root, "node_modules"), "dir");
 });
 
 afterEach(async () => {

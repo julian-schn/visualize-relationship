@@ -70,6 +70,8 @@ export async function buildGraphPage(root: string, today: string): Promise<Build
 
   const bundled = await esbuild({
     entryPoints: [join(root, "src/viewer/main.ts")],
+    // Resolve imports from the repo being built, not from wherever the process was started.
+    absWorkingDir: root,
     bundle: true,
     format: "iife",
     platform: "browser",
