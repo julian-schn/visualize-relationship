@@ -16,6 +16,10 @@ if (entry === undefined) {
   process.exit(2);
 }
 
+// Drop the entry path so the target sees the argv it would have as a real script, rather
+// than its own filename as the first user argument.
+process.argv.splice(2, 1);
+
 const cache = join(process.cwd(), "node_modules", ".cache", "visualize-relationship");
 await mkdir(cache, { recursive: true });
 

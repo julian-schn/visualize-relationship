@@ -1,5 +1,6 @@
 import type { CompiledPerson } from "../build/compile.ts";
 import { fold } from "../model/id.ts";
+import type { Names } from "../model/types.ts";
 
 export interface SearchHit {
   id: string;
@@ -9,8 +10,12 @@ export interface SearchHit {
   score: number;
 }
 
-/** Every string someone might type to mean this person. Section 11.3 wants all name forms. */
-export function nameFormsOf(person: CompiledPerson): string[] {
+/**
+ * Every string someone might type to mean this person. Section 11.3 wants all name forms,
+ * and section 13.1 wants the same set when searching before creating a duplicate, so this
+ * takes anything carrying names rather than a compiled person specifically.
+ */
+export function nameFormsOf(person: { names: Names }): string[] {
   const { names } = person;
 
   return [
@@ -23,8 +28,12 @@ export function nameFormsOf(person: CompiledPerson): string[] {
   ].filter((value): value is string => value !== undefined && value !== "");
 }
 
-/** Every character of the query in order, not necessarily adjacent. */
-function isSubsequence(query: string, target: string): boolean {
+/**
+ * Every character of the query in order, not necessarily adjacent. Shared with find, where
+ * it earns its keep on transliteration: "Müller" folds to "mueller", so a typed "muller"
+ * matches only because the e can be skipped.
+ */
+export function isSubsequence(query: string, target: string): boolean {
   let index = 0;
   for (const character of target) {
     if (character === query[index]) index += 1;

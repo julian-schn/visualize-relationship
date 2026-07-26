@@ -13,7 +13,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "validate": "node src/build/run.mjs src/validate/cli.ts",
-    "build": "node src/build/run.mjs src/build/cli.ts"
+    "build": "node src/build/run.mjs src/build/cli.ts",
+    "find": "node src/build/run.mjs src/agent/find-cli.ts",
+    "inbox:apply": "node src/build/run.mjs src/agent/inbox-cli.ts"
   },
   "dependencies": {
     "ajv": "8.20.0",

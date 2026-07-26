@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "patch.schema.json",
+  "title": "Patch",
+  "description": "An agent's proposed changes, staged at inbox/staged/<timestamp>.patch.json. Applied all or nothing by npm run inbox:apply, which refuses everything if validation fails afterwards.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "creates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "record"],
+        "properties": {
+          "type": { "$ref": "#/$defs/recordType" },
+          "record": { "type": "object" }
+        }
+      }
+    },
+    "updates": {
+      "description": "Shallow field replacement on an existing record. Cannot create, and cannot delete a record; section 13.4 forbids deletion outright.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "id", "set"],
+        "properties": {
+          "type": { "$ref": "#/$defs/recordType" },
+          "id": { "type": "string", "minLength": 1 },
+          "set": { "type": "object" }
+        }
+      }
+    },
+    "notes": {
+      "type": "string",
+      "description": "What the agent inferred and why, in plain language."
+    },
+    "uncertain": {
+      "description": "Questions the agent could not answer. Each becomes a line in suggestions/ rather than a silent guess.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "recordType": { "enum": ["person", "union", "relation"] }
+  }
+}
