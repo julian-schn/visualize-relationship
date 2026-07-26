@@ -9,6 +9,32 @@ import { loadValidators } from "../validate/schema.ts";
 import { compile, type CompiledGraph } from "./compile.ts";
 import { assertOffline } from "./verify.ts";
 
+/**
+ * Section 11.4 wants three faces self-hosted, and section 2 forbids the page fetching
+ * anything, so they are inlined as data URIs at build time. Latin subsets only: the whole
+ * set of three costs about 50K, which is the difference between a considered page and a
+ * page that ships a webfont CDN's worth of glyphs nobody will read.
+ */
+const FACES = [
+  { family: "Fraunces", file: "fraunces.woff2", weight: "500" },
+  { family: "IBM Plex Sans Condensed", file: "plex-sans-condensed.woff2", weight: "400" },
+  { family: "IBM Plex Mono", file: "plex-mono.woff2", weight: "400" },
+];
+
+async function fontFaces(root: string): Promise<string> {
+  const rules: string[] = [];
+
+  for (const face of FACES) {
+    const bytes = await readFile(join(root, "src/viewer/fonts", face.file));
+    rules.push(
+      `@font-face{font-family:"${face.family}";font-style:normal;font-weight:${face.weight};` +
+        `font-display:swap;src:url(data:font/woff2;base64,${bytes.toString("base64")}) format("woff2")}`,
+    );
+  }
+
+  return rules.join("\n");
+}
+
 export interface BuildResult {
   html: string;
   graph: CompiledGraph;
@@ -66,7 +92,7 @@ export async function buildGraphPage(root: string, today: string): Promise<Build
 
   const graph = compile(graphFrom(records));
 
-  const css = await readFile(join(root, "src/viewer/style.css"), "utf8");
+  const css = `${await fontFaces(root)}\n${await readFile(join(root, "src/viewer/style.css"), "utf8")}`;
 
   const bundled = await esbuild({
     entryPoints: [join(root, "src/viewer/main.ts")],
