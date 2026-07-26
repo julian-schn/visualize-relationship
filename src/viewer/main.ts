@@ -136,7 +136,13 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
         // Generations run top to bottom; a force layout butchers a family tree.
         rankDir: "TB",
         nodeSep: 28,
-        rankSep: 64,
+        rankSep: 42,
+        // Scaffolding spans one rank, direct parentage two, so a generation is the same
+        // height whether or not the parents are recorded as a couple.
+        minLen: (edge: { data(key: string): unknown }) => {
+          const span = edge.data("span");
+          return typeof span === "number" && span > 0 ? span : 1;
+        },
         animate: motionOk,
         animationDuration: 180,
         fit: true,

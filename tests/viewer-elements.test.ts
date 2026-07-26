@@ -140,15 +140,31 @@ describe("union edges", () => {
     expect(shellOf(byReason, "a").edges[0]?.data.ended).toBe(true);
   });
 
-  it("draws a three-person union as a triangle rather than a hub", () => {
+  it("gives a three-person union one scaffolding node in lineage mode", () => {
     const graph = graphOf(
       [person("a"), person("b"), person("c")],
       [{ id: "u-0001", partners: ["a", "b", "c"], type: "partnership" }],
     );
 
-    const unionEdges = shellOf(graph, "a").edges.filter((edge) => edge.data.kind === "union");
+    const { nodes, edges } = shellOf(graph, "a");
+    const unionEdges = edges.filter((edge) => edge.data.kind === "union");
+
+    expect(nodes.filter((node) => node.data.kind === "union")).toHaveLength(1);
     expect(unionEdges).toHaveLength(3);
-    expect(new Set(unionEdges.map((edge) => edge.data.id)).size).toBe(3);
+    expect(unionEdges.every((edge) => edge.data.target === "n:u-0001")).toBe(true);
+  });
+
+  it("joins partners pairwise in social mode, with no scaffolding", () => {
+    const graph = graphOf(
+      [person("a"), person("b"), person("c")],
+      [{ id: "u-0001", partners: ["a", "b", "c"], type: "partnership" }],
+    );
+
+    const ego = egoGraph(graph, "a", { depth: 3, kinds: ["parentage", "union", "relation"] });
+    const { nodes, edges } = elementsFor(graph, ego, { mode: "social" });
+
+    expect(nodes.filter((node) => node.data.kind === "union")).toHaveLength(0);
+    expect(edges.filter((edge) => edge.data.kind === "union")).toHaveLength(3);
   });
 
   it("drops a partner who is outside the shell", () => {
@@ -158,7 +174,78 @@ describe("union edges", () => {
     );
 
     const ego = { ids: new Set(["a", "b"]), distance: new Map([["a", 0], ["b", 1]]) };
-    expect(elementsFor(graph, ego).edges).toHaveLength(1);
+    const unionEdges = elementsFor(graph, ego).edges.filter((e) => e.data.kind === "union");
+
+    expect(unionEdges.map((edge) => edge.data.source).sort()).toEqual(["a", "b"]);
+  });
+
+  it("does not scaffold a union with only one partner in view", () => {
+    const graph = graphOf(
+      [person("a"), person("b")],
+      [{ id: "u-0001", partners: ["a", "b"], type: "marriage" }],
+    );
+
+    const ego = { ids: new Set(["a"]), distance: new Map([["a", 0]]) };
+    const { nodes } = elementsFor(graph, ego);
+
+    expect(nodes.filter((node) => node.data.kind === "union")).toHaveLength(0);
+  });
+});
+
+describe("scaffolding keeps partners level", () => {
+  const couple = [
+    person("mum"),
+    person("dad"),
+    person("kid", [
+      { id: "mum", kind: "birth" },
+      { id: "dad", kind: "birth" },
+    ]),
+  ];
+  const married = [{ id: "u-0001", partners: ["mum", "dad"], type: "marriage" }];
+
+  it("hangs a couple's child off the union rather than off one parent", () => {
+    const graph = graphOf(couple, married);
+    const parentage = shellOf(graph, "kid").edges.filter((e) => e.data.kind === "parentage");
+
+    expect(parentage).toHaveLength(1);
+    expect(parentage[0]?.data.source).toBe("n:u-0001");
+  });
+
+  it("spans one rank through scaffolding and two when direct", () => {
+    const graph = graphOf(couple, married);
+    const viaUnion = shellOf(graph, "kid").edges.find((e) => e.data.kind === "parentage");
+    expect(viaUnion?.data.span).toBe(1);
+
+    const single = graphOf([person("mum"), person("kid", [{ id: "mum", kind: "birth" }])]);
+    const direct = shellOf(single, "kid").edges.find((e) => e.data.kind === "parentage");
+    expect(direct?.data.span).toBe(2);
+  });
+
+  it("keeps direct edges when the parents disagree on how they are parents", () => {
+    // One birth parent and one adoptive parent must keep their own line work.
+    const mixed = graphOf(
+      [
+        person("mum"),
+        person("dad"),
+        person("kid", [
+          { id: "mum", kind: "birth" },
+          { id: "dad", kind: "adoptive" },
+        ]),
+      ],
+      married,
+    );
+
+    const parentage = shellOf(mixed, "kid").edges.filter((e) => e.data.kind === "parentage");
+    expect(parentage).toHaveLength(2);
+    expect(parentage.some((edge) => edge.data.notByBirth)).toBe(true);
+  });
+
+  it("does not scaffold in social mode", () => {
+    const graph = graphOf(couple, married);
+    const ego = egoGraph(graph, "kid", { depth: 3, kinds: ["parentage", "union", "relation"] });
+    const { edges } = elementsFor(graph, ego, { mode: "social" });
+
+    expect(edges.filter((e) => e.data.kind === "parentage")).toHaveLength(2);
   });
 });
 
