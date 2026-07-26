@@ -391,6 +391,11 @@ force-directed hairball of 400 people is a screenshot, not a tool.
 
 Switching modes keeps the focus person and animates between layouts.
 
+Not yet true: rank is not quite generation. Dagre gives a union edge a rank of its own, so a
+spouse currently draws one row below their partner, as though they were their child. Setting
+the edge's `minLen` to 0 is not the fix; dagre's ranking requires at least 1 and throws.
+Doing it properly means adding a union node to the layout graph only, never to the data.
+
 ### 11.3 Features
 
 - Fuzzy search by any name form including `nicknames`, `aka` and `former`
@@ -426,16 +431,19 @@ Type: `Fraunces` for the few display moments (kinship terms, the focus person's 
 `IBM Plex Sans Condensed` for node labels, `IBM Plex Mono` for dates and ids. All three
 self-hosted in `src/viewer/fonts/`, because there is no network at runtime.
 
-Not yet true: the three families are named first in each stack but the files are not in the
-repository, so the page falls back to system faces. Embedding them is a licensing and
-bundle-size decision for the human, not one an agent should make quietly.
+Not yet true: the files are not in the repository, so nothing renders in these faces. The
+page chrome names them first in each CSS stack and falls back to system faces. Node labels
+do not name them at all, because cytoscape paints to canvas and its parser rejects a quoted
+font stack, leaving only a generic family. Both come back the day the files land. Embedding
+them is a licensing and bundle-size decision for the human, not one an agent makes quietly.
 
 Line work encodes meaning rather than decorating:
 
 - parentage: solid ink
 - parentage with `confidence` below certain: dashed
 - non-birth parentage: solid with a small notch glyph at the child end
-- union: doubled hairline, broken once where the union ended
+- union: doubled hairline, broken once where the union ended — currently a single hairline,
+  dotted when ended, because canvas has no double-line style and faking it needs two edges
 - social: single line, thickness from `closeness`
 - ended or estranged: dotted, in `--dormant`
 
