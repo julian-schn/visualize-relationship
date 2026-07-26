@@ -8,7 +8,6 @@ Requires Node 20+.
 ```sh
 npm install     # also installs the git hooks
 npm test
-npm run build   # writes dist/graph.html
 ```
 
 `AGENTS.md` is the spec and the rulebook. Read it before changing anything.
