@@ -35,7 +35,7 @@ jobs:
             echo "available=true" >> "$GITHUB_OUTPUT"
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "Maintenance tooling arrives in milestone 11."
+            echo "Maintenance tooling arrives in milestone 10."
           fi
 
       - name: Run maintenance

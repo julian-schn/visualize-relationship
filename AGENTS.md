@@ -6,23 +6,11 @@ This file is both the product spec and the permanent rulebook for any agent work
 Read it fully before touching anything. Keep it current: if reality diverges from this
 document, the document is a bug.
 
-If you are Claude Code, symlink or copy this to `CLAUDE.md` on first run.
+`CLAUDE.md` is a symlink to this file.
 
----
-
-## 0. First run
-
-If the repo is empty apart from this file:
-
-1. Read this document end to end.
-2. Create the scaffold in section 17 (Build order), milestone by milestone.
-3. Commit after every milestone using the conventions in section 14.
-4. Install the git hooks (section 15) as part of milestone 0.
-5. Record anything you had to decide that this spec left open in the commit body that
-   decided it. There is no separate decision log; see section 16.
-6. Post the list of open questions from section 18 back to the human.
-
-Do not build everything in one commit. Small, verifiable, conventional steps.
+Work milestone by milestone through section 17. Small, verifiable, conventional commits;
+never build everything in one. Anything you had to decide that this spec left open goes in
+the commit body that decided it, per section 16.
 
 ---
 
@@ -260,63 +248,9 @@ Elective and social ties. This is where the interesting data lives.
 
 `vocab.json` is the single source of truth for every constrained string in the data.
 
-```json
-{
-  "version": 1,
-  "relationType": [
-    { "key": "friend", "label": "Friend", "symmetric": true },
-    { "key": "best-friend", "label": "Best friend", "symmetric": true },
-    { "key": "acquaintance", "label": "Acquaintance", "symmetric": true },
-    { "key": "colleague", "label": "Colleague", "symmetric": true },
-    { "key": "mentor", "label": "Mentor", "symmetric": false, "inverse": "mentee" },
-    { "key": "mentee", "label": "Mentee", "symmetric": false, "inverse": "mentor" },
-    { "key": "rival", "label": "Rival", "symmetric": false },
-    { "key": "chosen-family", "label": "Chosen family", "symmetric": true }
-  ],
-  "parentKind": [
-    { "key": "birth", "label": "Birth" },
-    { "key": "adoptive", "label": "Adoptive" },
-    { "key": "step", "label": "Step" },
-    { "key": "foster", "label": "Foster" },
-    { "key": "guardian", "label": "Guardian" },
-    { "key": "donor", "label": "Donor" },
-    { "key": "unknown", "label": "Unknown" }
-  ],
-  "unionType": [
-    { "key": "marriage", "label": "Marriage" },
-    { "key": "civil-partnership", "label": "Civil partnership" },
-    { "key": "partnership", "label": "Partnership" },
-    { "key": "engagement", "label": "Engagement" },
-    { "key": "liaison", "label": "Liaison" },
-    { "key": "unknown", "label": "Unknown" }
-  ],
-  "unionEnd": [
-    { "key": "divorce", "label": "Divorce" },
-    { "key": "separation", "label": "Separation" },
-    { "key": "death", "label": "Death" },
-    { "key": "annulment", "label": "Annulment" },
-    { "key": "drift", "label": "Drift" },
-    { "key": "unknown", "label": "Unknown" }
-  ],
-  "relationStatus": [
-    { "key": "active", "label": "Active" },
-    { "key": "dormant", "label": "Dormant" },
-    { "key": "estranged", "label": "Estranged" },
-    { "key": "ended", "label": "Ended" },
-    { "key": "unknown", "label": "Unknown" }
-  ],
-  "context": [
-    { "key": "school", "label": "School" },
-    { "key": "university", "label": "University" },
-    { "key": "work", "label": "Work" },
-    { "key": "discord", "label": "Discord" },
-    { "key": "music", "label": "Music" },
-    { "key": "childhood", "label": "Childhood" },
-    { "key": "neighbourhood", "label": "Neighbourhood" }
-  ],
-  "tag": []
-}
-```
+The collections are `relationType`, `parentKind`, `unionType`, `unionEnd`, `relationStatus`,
+`context` and `tag`, plus an integer `version`. Read the file for the current keys; it is
+short, and a copy here would be wrong within a week.
 
 **Why this exists:** without it an agent invents `buddy`, `pal`, `good friend` and
 `close friend` inside a week and every filter in the viewer becomes useless.
@@ -729,7 +663,7 @@ Hooks must be fast. If pre-commit exceeds about two seconds, cache the parse.
 
 **Bootstrap rule.** A gate becomes unconditional as soon as its real implementation exists:
 typechecking and commit-message enforcement in milestone 0, tests in milestone 2, validation
-in milestone 3, and build verification in milestone 6. Before then, hooks may use
+in milestone 3, and build verification in milestone 5. Before then, hooks may use
 `npm run --if-present`; the commit that implements a gate removes the corresponding
 conditional. Do not create no-op scripts merely to make a gate look green.
 
@@ -743,7 +677,7 @@ A second scheduled workflow runs `agent:maintenance` weekly and opens an issue i
 is non-empty. It must never commit.
 
 CI follows the same bootstrap rule as hooks. During early milestones it runs every available
-gate; from milestone 6 on, `typecheck`, `validate`, `test`, and `build` are all mandatory.
+gate; from milestone 5 on, `typecheck`, `validate`, `test`, and `build` are all mandatory.
 
 ---
 
@@ -785,29 +719,16 @@ Each milestone ends with green validation, green tests and one or more commits.
 1. **Schemas and vocab**: the three JSON Schemas and `vocab.json`. No code yet.
 2. **Model layer**: loader, id helpers, EDTF date parser, merged-tombstone resolution. Tests.
 3. **Validation**: every error and warning in section 10. Tests with deliberately broken fixtures.
-4. **Seed data**: 8 to 12 fictional people covering the nasty cases. Adoption, remarriage,
-   half-siblings, a three-person union, an estranged friendship, an asymmetric mentorship,
-   an uncertain parent, someone with unknown parents. This is the test corpus, keep it in
-   `fixtures/`, not in `people/`.
-5. **Kinship engine**: derivation, terms in en and de, path finding. Heavy tests against the seed data.
-6. **Build pipeline**: compile, inline, the section 12.2 assertions.
-7. **Viewer, lineage mode**: dagre layout, ego focus, hover cards, search.
-8. **Viewer, social mode**: fcose, filters, closeness weighting.
-9. **Relate and the ribbon**: the signature interaction.
-10. **Timeline scrubber.**
-11. **Agent tooling**: `find`, `inbox:apply`, `agent:maintenance`, report generators.
-12. **Polish**: keyboard shortcuts, exports, dark mode, reduced motion.
+4. **Kinship engine**: derivation, terms in en and de, path finding. Covers the nasty cases:
+   adoption, remarriage, half-siblings, a three-person union, an ended union, an estranged
+   friendship, an asymmetric mentorship, an uncertain parent, unknown parents. Its test
+   corpus is built in the tests, not committed as records.
+5. **Build pipeline**: compile, inline, the section 12.2 assertions.
+6. **Viewer, lineage mode**: dagre layout, ego focus, hover cards, search.
+7. **Viewer, social mode**: fcose, filters, closeness weighting.
+8. **Relate and the ribbon**: the signature interaction.
+9. **Timeline scrubber.**
+10. **Agent tooling**: `find`, `inbox:apply`, `agent:maintenance`, report generators.
+11. **Polish**: keyboard shortcuts, exports, dark mode, reduced motion.
 
----
-
-## 18. Initial product decisions
-
-Decided with the human on 2026-07-26:
-
-1. The graph contains real people only; no `realm` field is needed.
-2. Living people's birth dates may remain permanently in private git history.
-3. English is the default kinship language. German remains available as a viewer toggle.
-4. `dist/graph.html` is committed and checked for staleness in CI.
-5. There is no existing import corpus. New material enters through `inbox/`.
-6. GEDCOM export is deferred until there is a concrete need.
-7. Weekly maintenance opens GitHub issues when its report is non-empty.
+Milestones 0 through 3 are done.
