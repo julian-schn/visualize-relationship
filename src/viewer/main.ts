@@ -154,9 +154,9 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     scrubYear.min = String(span.min);
     scrubYear.max = String(span.max);
     scrubYear.value = String(span.max);
-    scrubValue.textContent = "all";
   }
   scrubYear.hidden = true;
+  scrubValue.hidden = true;
   scrubber.append(scrubToggle, scrubYear, scrubValue);
   if (span === null) scrubber.hidden = true;
 
@@ -680,7 +680,8 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     scrubYear.hidden = !arming;
 
     state.year = arming ? Number(scrubYear.value) : null;
-    scrubValue.textContent = arming ? scrubYear.value : "all";
+    scrubValue.hidden = !arming;
+    scrubValue.textContent = scrubYear.value;
     render();
   });
 

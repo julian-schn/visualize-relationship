@@ -1,6 +1,6 @@
-/* Section 11.4. Fraunces, IBM Plex Sans Condensed and IBM Plex Mono are named first and are
-   not yet self-hosted in src/viewer/fonts/, so the stacks fall back to system faces until
-   the files are added. */
+/* Section 11.4. The three faces are self-hosted in fonts/ and inlined by the build, so these
+   stacks resolve without a network. The reference is drafting and field notation: square
+   corners, hairlines, one accent, and no chrome that a dashboard would have. */
 :root {
   --ground: #e3e5dc;
   --ink: #1e211c;
@@ -24,6 +24,14 @@
   box-sizing: border-box;
 }
 
+/* Nothing in a drafting chart has a rounded corner, and a UA-styled control brings its own. */
+input,
+button,
+select,
+fieldset {
+  border-radius: 0;
+}
+
 html,
 body {
   height: 100%;
@@ -40,23 +48,35 @@ body {
 
 #app {
   display: grid;
-  grid-template-rows: auto auto 1fr;
+  grid-template-rows: auto 1fr;
   height: 100%;
   position: relative;
 }
 
 .bar {
   display: flex;
-  gap: 1rem;
+  gap: 0.9rem;
   align-items: center;
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 1rem;
   border-bottom: 1px solid var(--rule);
 }
 
+/* Everything from here sits against the right edge, so the bar spans the width instead of
+   clumping at one end of a wide screen. Reading order becomes: who and how, then how much,
+   then the occasional tools. */
+.bar > .scrubber {
+  margin-left: auto;
+}
+
+.bar > .filters,
+.bar > .view,
+.bar > .modes:last-of-type {
+  color: var(--dormant);
+}
+
 .search {
-  flex: 1 1 auto;
+  flex: 0 1 22rem;
   min-width: 0;
-  max-width: 28rem;
   padding: 0.35rem 0.5rem;
   background: transparent;
   border: 1px solid var(--rule);
@@ -73,9 +93,48 @@ body {
   color: var(--dormant);
 }
 
-.depth-value {
+.depth-value,
+.scrub-value {
   font-family: var(--mono);
+  font-size: 0.85em;
   color: var(--ink);
+}
+
+/* A native range brings the OS accent with it. Left alone that is a bright blue in a page
+   whose only accent is oxblood, and it is the loudest thing on screen. */
+input[type="range"] {
+  appearance: none;
+  width: 7rem;
+  height: 1rem;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 1px;
+  background: var(--rule);
+}
+
+input[type="range"]::-moz-range-track {
+  height: 1px;
+  background: var(--rule);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 9px;
+  height: 9px;
+  margin-top: -4px;
+  background: var(--ink);
+  border: 0;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 9px;
+  height: 9px;
+  background: var(--ink);
+  border: 0;
+  border-radius: 0;
 }
 
 .results {
@@ -114,14 +173,23 @@ body {
   font-size: 0.85em;
 }
 
+/* An annotation on the drawing rather than a band of chrome: the trail is usually two words,
+   and a full-width strip for it cost more vertical space than the graph could spare. */
 .trail {
+  position: absolute;
+  top: 3.6rem;
+  left: 1rem;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
   align-items: baseline;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--rule);
-  font-size: 0.9em;
+  font-size: 0.85em;
+  pointer-events: none;
+}
+
+.trail > * {
+  pointer-events: auto;
 }
 
 .crumb {
@@ -218,7 +286,7 @@ body {
 }
 
 .mode {
-  padding: 0.3rem 0.7rem;
+  padding: 0.28rem 0.65rem;
   background: none;
   border: 1px solid var(--rule);
   color: var(--dormant);
@@ -238,6 +306,7 @@ body {
 .filters {
   position: relative;
   color: var(--dormant);
+  font-size: 0.9em;
 }
 
 .filters > summary {
@@ -288,7 +357,9 @@ body {
 .term {
   position: absolute;
   z-index: 4;
-  transform: translate(-50%, -50%);
+  /* Lifted clear of the midpoint node: centred on it, the word sat on top of the person it
+     was describing and hid them. */
+  transform: translate(-50%, -190%);
   padding: 0.1rem 0.5rem;
   background: var(--ground);
   color: var(--signal);
