@@ -94,6 +94,8 @@ schema/                JSON Schema per record type, and for vocab.json
 src/model/             types, loaders, id helpers, date parser
 src/kinship/           derivation engine (section 8)
 src/validate/          validation rules (section 10)
+src/viewer/            the single-page app, and the three fonts in fonts/
+src/agent/             find, inbox apply, maintenance (section 13)
 src/build/             compile + inline pipeline (section 12)
 
 .githooks/             git hooks (section 15)
@@ -101,11 +103,10 @@ src/build/             compile + inline pipeline (section 12)
 dist/                  committed build output; see 12.3
 ```
 
-Directories arrive with the milestone that needs them rather than sitting empty:
-`src/viewer/` and `src/agent/`, and `inbox/` with `processed/` and `staged/`, plus
-`suggestions/`, `proposals/` and `migrations/` for the agent workflow in section 13. The
-loader and the validator both treat a missing directory as empty, so nothing breaks while
-they do not exist.
+`inbox/` with `processed/` and `staged/`, plus `suggestions/`, `proposals/` and
+`migrations/`, are created on first use rather than kept empty. The loader and the validator
+both treat a missing directory as empty, which is tested, so nothing breaks before they
+exist.
 
 ---
 
@@ -326,7 +327,7 @@ Draw this line clearly and keep it drawn.
 - picking the least-wrong vocabulary key for an odd relationship
 - writing and rewriting notes
 - spotting that the data has drifted and proposing a fix
-- keeping docs, README and changelog honest
+- keeping AGENTS.md and the README honest
 - authoring migrations
 
 **Never agent**: anything the viewer needs at runtime, anything destructive, anything that
@@ -397,9 +398,13 @@ exists in the layout graph only and never in the data, so section 5.2 still hold
 parentage spans two ranks so a generation is the same height either way. Setting a union
 edge's `minLen` to 0 is not an alternative: dagre's ranking requires at least 1 and throws.
 
-Not yet true: ordering within a rank does not keep a partner beside their spouse, so a
-sibling connector can run behind an unrelated box. Dagre orders by crossing count and knows
-nothing about couples, and weighting the union edges made no difference.
+Dagre orders a rank by crossing count and knows nothing about couples, so a second pass
+reseats each rank to put partners next to each other. It only reassigns people to the slots
+the rank already had, inventing no positions, so spacing and alignment survive.
+
+What remains: a sibling connector can still pass behind a spouse, because siblings and
+spouses share one rank and cannot both be contiguous when someone is in both groups. That
+needs a layout engine built for family trees rather than a generic layered DAG.
 
 ### 11.3 Features
 
@@ -439,19 +444,18 @@ Type: `Fraunces` for the few display moments (kinship terms, the focus person's 
 `IBM Plex Sans Condensed` for node labels, `IBM Plex Mono` for dates and ids. All three
 self-hosted in `src/viewer/fonts/`, because there is no network at runtime.
 
-Not yet true: the files are not in the repository, so nothing renders in these faces. The
-page chrome names them first in each CSS stack and falls back to system faces. Node labels
-do not name them at all, because cytoscape paints to canvas and its parser rejects a quoted
-font stack, leaving only a generic family. Both come back the day the files land. Embedding
-them is a licensing and bundle-size decision for the human, not one an agent makes quietly.
+All three are Latin subsets under the OFL, with the licence beside them, and the build
+inlines each as a base64 `@font-face`. About 50K for the set: enough for these names, and
+far short of a webfont CDN's worth of glyphs nobody will read. Cytoscape's parser rejects a
+*quoted* stack, so the canvas names them unquoted.
 
 Line work encodes meaning rather than decorating:
 
 - parentage: solid ink
 - parentage with `confidence` below certain: dashed
 - non-birth parentage: solid with a small notch glyph at the child end
-- union: doubled hairline, broken once where the union ended — currently a single hairline
-  into the marriage point, dotted when ended; canvas has no double-line style
+- union: doubled hairline into the marriage point, broken where the union ended. Canvas has
+  no double-line style, so it is two edges nudged either side of centre
 - social: single line, thickness from `closeness`
 - ended or estranged: dotted, in `--dormant`
 

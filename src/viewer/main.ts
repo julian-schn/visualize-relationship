@@ -5,6 +5,7 @@ import svg from "cytoscape-svg";
 import type { CompiledGraph, CompiledPerson } from "../build/compile.ts";
 import { DEFAULT_DEPTH, MAX_DEPTH, MIN_DEPTH, egoGraph } from "./ego.ts";
 import { elementsFor, type Mode } from "./elements.ts";
+import { seatPartners } from "./order.ts";
 import {
   filterOptionsFrom,
   labelFor,
@@ -375,10 +376,46 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     canvas.dataset["nodes"] = String(nodes.length);
     canvas.dataset["edges"] = String(edges.length);
     const layout = cy.layout(layoutFor(state.mode));
-    layout.one("layoutstop", () => drawRibbon());
+    layout.one("layoutstop", () => {
+      if (state.mode === "lineage") reseat();
+      drawRibbon();
+    });
     layout.run();
 
     renderTrail();
+  }
+
+  /** Puts spouses beside each other once dagre has finished ranking. */
+  function reseat(): void {
+    const partnersOf = new Map<string, Set<string>>();
+
+    for (const point of cy.nodes("[kind = 'union']")) {
+      const partners = point.connectedEdges().sources().map((node) => String(node.id()));
+      for (const a of partners) {
+        for (const b of partners) {
+          if (a === b) continue;
+          const existing = partnersOf.get(a);
+          if (existing) existing.add(b);
+          else partnersOf.set(a, new Set([b]));
+        }
+      }
+    }
+
+    if (partnersOf.size === 0) return;
+
+    const placed = cy.nodes().map((node) => ({
+      id: String(node.id()),
+      x: node.position("x"),
+      y: node.position("y"),
+    }));
+
+    const moved = seatPartners(placed, partnersOf);
+    if (moved.size === 0) return;
+
+    cy.batch(() => {
+      for (const [id, x] of moved) cy.$id(id).position("x", x);
+    });
+    cy.fit(undefined, 32);
   }
 
   function setMode(mode: Mode): void {

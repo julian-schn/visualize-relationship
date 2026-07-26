@@ -107,7 +107,16 @@ export function cytoscapeStyle(
     },
     {
       selector: "edge[kind = 'union']",
-      style: { "curve-style": mode === "lineage" ? "straight" : "bezier", "line-color": INK, width: 1 },
+      style: { "curve-style": "unbundled-bezier", "line-color": INK, width: 1 },
+    },
+    {
+      // The two rails of the doubled hairline, nudged either side of centre.
+      selector: "edge[kind = 'union'][rail = -1]",
+      style: { "control-point-distances": [-2], "control-point-weights": [0.5] },
+    },
+    {
+      selector: "edge[kind = 'union'][rail = 1]",
+      style: { "control-point-distances": [2], "control-point-weights": [0.5] },
     },
     {
       selector: "edge[kind = 'union'][?ended]",

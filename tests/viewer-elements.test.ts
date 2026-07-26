@@ -150,8 +150,10 @@ describe("union edges", () => {
     const unionEdges = edges.filter((edge) => edge.data.kind === "union");
 
     expect(nodes.filter((node) => node.data.kind === "union")).toHaveLength(1);
-    expect(unionEdges).toHaveLength(3);
+    // Two rails per partner: section 11.4 draws a union as a doubled hairline.
+    expect(unionEdges).toHaveLength(6);
     expect(unionEdges.every((edge) => edge.data.target === "n:u-0001")).toBe(true);
+    expect(new Set(unionEdges.map((edge) => edge.data.rail))).toEqual(new Set([-1, 1]));
   });
 
   it("joins partners pairwise in social mode, with no scaffolding", () => {
@@ -176,7 +178,30 @@ describe("union edges", () => {
     const ego = { ids: new Set(["a", "b"]), distance: new Map([["a", 0], ["b", 1]]) };
     const unionEdges = elementsFor(graph, ego).edges.filter((e) => e.data.kind === "union");
 
-    expect(unionEdges.map((edge) => edge.data.source).sort()).toEqual(["a", "b"]);
+    expect([...new Set(unionEdges.map((edge) => edge.data.source))].sort()).toEqual(["a", "b"]);
+  });
+
+  it("draws each rail as its own edge with a distinct id", () => {
+    const graph = graphOf(
+      [person("a"), person("b")],
+      [{ id: "u-0001", partners: ["a", "b"], type: "marriage" }],
+    );
+
+    const rails = shellOf(graph, "a").edges.filter((edge) => edge.data.kind === "union");
+    expect(new Set(rails.map((edge) => edge.data.id)).size).toBe(rails.length);
+    expect(rails.filter((edge) => edge.data.rail === -1)).toHaveLength(2);
+  });
+
+  it("leaves social mode undoubled, where a force layout has no rails to align", () => {
+    const graph = graphOf(
+      [person("a"), person("b")],
+      [{ id: "u-0001", partners: ["a", "b"], type: "marriage" }],
+    );
+
+    const ego = egoGraph(graph, "a", { depth: 2, kinds: ["parentage", "union", "relation"] });
+    const social = elementsFor(graph, ego, { mode: "social" });
+
+    expect(social.edges.filter((edge) => edge.data.kind === "union")).toHaveLength(1);
   });
 
   it("does not scaffold a union with only one partner in view", () => {
