@@ -19,9 +19,13 @@ Installation also configures the repository-local git hooks.
 
 ## Current state
 
-The project is being built milestone by milestone. The scaffold and CI arrive first;
-schemas, validation, kinship derivation, the offline build, and the viewer follow in the
-order documented in `AGENTS.md`.
+The project is being built milestone by milestone, in the order documented in `AGENTS.md`.
+The scaffold, hooks, and CI are in place, and `schema/` plus `vocab.json` now describe the
+three record types. The loader, validation, kinship derivation, the offline build, and the
+viewer follow.
+
+Until the loader lands, `npm run typecheck` is the only check available locally; the hooks
+and CI pick up each further gate as its milestone implements it.
 
 ## Data safety
 

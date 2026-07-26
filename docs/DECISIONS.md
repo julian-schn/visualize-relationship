@@ -54,3 +54,43 @@ No-op scripts are not used to simulate successful checks.
 
 GEDCOM export waits for a concrete need. Weekly maintenance runs in GitHub Actions and opens
 an issue only when its machine-readable report contains findings; it never commits changes.
+
+## 2026-07-26 — Install dependencies from the lockfile in CI
+
+`package-lock.json` is committed and CI installs with `npm ci` rather than `npm install`.
+`npm install` may quietly resolve and rewrite a different tree, which would make the
+deterministic build required for the staleness check impossible to rely on. A stale lockfile
+now fails the run instead of being repaired invisibly.
+
+## 2026-07-26 — Keep vocabulary out of the schemas
+
+Fields backed by `vocab.json` are typed in the JSON Schemas as plain slug strings, not as
+enums. Duplicating the term lists would give every controlled string two sources of truth,
+and a provisional addition made mid-ingestion would need a schema change before the data
+could land. Membership is a validator error instead.
+
+## 2026-07-26 — Let the date parser own the EDTF grammar
+
+Date fields are typed as a non-empty string or `null` and nothing more. The EDTF subset has
+one implementation, in `src/model/date.ts`. A pattern in the schemas would be a second,
+subtly different grammar, and its failures would read as schema errors rather than as the
+date problems they are.
+
+## 2026-07-26 — Constrain pronouns by shape, not by content
+
+`pronouns` is validated only as a non-empty array of non-empty strings. There is no enum,
+because pronouns are not controlled vocabulary, and no uniqueness rule, because the array's
+meaning is its order of preference rather than set membership. `minItems` is 1 so an empty
+array cannot become an ambiguous second spelling of "not recorded"; omit the field instead.
+
+## 2026-07-26 — Keep the record schemas self-contained
+
+Each schema resolves every `$ref` inside its own `$defs` rather than importing shared
+definitions across files. The cost is a repeated ID pattern in three places; the benefit is
+that any schema can be compiled alone, which keeps the validator and its tests simple.
+
+## 2026-07-26 — Reject undeclared fields
+
+Every object in the schemas sets `additionalProperties: false`. A misspelled field in a
+hand-edited record would otherwise be accepted, ignored, and then lost the next time the
+record was rewritten.
