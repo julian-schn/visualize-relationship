@@ -37,6 +37,12 @@ telemetry, no hosted site.
 - A general-purpose graph database
 - Genealogical source citation and evidence management (explicitly out of scope; see 5.1)
 
+**Real people only.** Every record in `people/` on `main` describes someone who exists.
+There is deliberately no realm or fictional flag, because there is nothing to mark: invented
+people never get there. Test corpora belong in the tests or on an `agent/` branch that is
+not merged, and the moment a fictional person lands on `main` the rule has already failed,
+since nothing in the data distinguishes them afterwards.
+
 ---
 
 ## 2. Hard constraints
@@ -554,6 +560,12 @@ Never write directly to `people/` from raw input. The flow:
 5. Agent commits, then moves the raw file to `inbox/processed/`.
 6. Anything in `uncertain` goes to `suggestions/` and gets surfaced to the human. Do not guess
    silently. Guessing wrong and writing it down is worse than leaving a gap.
+
+The rule exists to keep unreviewed writes away from real people's records, so it has exactly
+one exemption: invented records on an unmerged `agent/` branch, written to exercise the
+pipeline. They are not raw input about anyone, and until `inbox:apply` exists there is no
+other way to produce them. Say so in the commit. Everything about a real person goes through
+the flow above, including once the tooling exists.
 
 ### 13.2 Maintenance
 
