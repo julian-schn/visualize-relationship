@@ -1,0 +1,18 @@
+#!/bin/sh
+set -eu
+
+npm run typecheck
+npm run validate --if-present
+npm run docs --if-present
+
+for generated_file in \
+  docs/SCHEMA.md \
+  docs/VOCAB.md \
+  docs/STATS.md \
+  docs/KINSHIP.md \
+  CHANGELOG.md
+do
+  if [ -f "$generated_file" ]; then
+    git add "$generated_file"
+  fi
+done

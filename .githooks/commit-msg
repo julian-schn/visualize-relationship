@@ -1,0 +1,17 @@
+#!/bin/sh
+set -eu
+
+message_file=$1
+header=$(sed -n '1p' "$message_file")
+pattern='^(feat|fix|data|docs|refactor|test|build|ci|chore)\((schema|data|people|unions|relations|model|kinship|viewer|validate|build|agent|vocab|migrations|fixtures|docs|ci|hooks|deps)\)!?: [a-z0-9].+[^.]$'
+
+if [ "${#header}" -gt 72 ]; then
+  echo "commit subject must be 72 characters or fewer" >&2
+  exit 1
+fi
+
+if ! LC_ALL=C printf '%s\n' "$header" | grep -Eq "$pattern"; then
+  echo "commit subject must be a Conventional Commit with an approved type and scope" >&2
+  echo "received: $header" >&2
+  exit 1
+fi
