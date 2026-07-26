@@ -426,6 +426,10 @@ Type: `Fraunces` for the few display moments (kinship terms, the focus person's 
 `IBM Plex Sans Condensed` for node labels, `IBM Plex Mono` for dates and ids. All three
 self-hosted in `src/viewer/fonts/`, because there is no network at runtime.
 
+Not yet true: the three families are named first in each stack but the files are not in the
+repository, so the page falls back to system faces. Embedding them is a licensing and
+bundle-size decision for the human, not one an agent should make quietly.
+
 Line work encodes meaning rather than decorating:
 
 - parentage: solid ink
@@ -679,4 +683,4 @@ Each milestone ends with green validation, green tests and one or more commits.
 10. **Agent tooling**: `find`, `inbox:apply`, `agent:maintenance`, report generators.
 11. **Polish**: keyboard shortcuts, exports, dark mode, reduced motion.
 
-Milestones 0 through 5 are done.
+Milestones 0 through 7 are done.

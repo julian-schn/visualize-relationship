@@ -1,12 +1,21 @@
 import cytoscape from "cytoscape";
 import dagre from "cytoscape-dagre";
+import fcose from "cytoscape-fcose";
 import type { CompiledGraph, CompiledPerson } from "../build/compile.ts";
 import { DEFAULT_DEPTH, MAX_DEPTH, MIN_DEPTH, egoGraph } from "./ego.ts";
-import { elementsFor } from "./elements.ts";
+import { elementsFor, type Mode } from "./elements.ts";
+import {
+  filterOptionsFrom,
+  labelFor,
+  noFilters,
+  type FilterOptions,
+  type Filters,
+} from "./filters.ts";
 import { searchPeople } from "./search.ts";
-import { cytoscapeStyle } from "./theme.ts";
+import { cytoscapeStyle, idealEdgeLength } from "./theme.ts";
 
 cytoscape.use(dagre);
+cytoscape.use(fcose);
 
 /**
  * Reads the graph the build inlined. There is no fetch here and there must never be one:
@@ -22,6 +31,8 @@ export function readGraph(doc: Document): CompiledGraph {
 interface State {
   focus: string;
   depth: number;
+  mode: Mode;
+  filters: Filters;
   /** Previously focused people, most recent last. Section 11.3's breadcrumb trail. */
   trail: string[];
 }
@@ -57,8 +68,12 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
   const state: State = {
     focus: graph.people[0]?.id ?? "",
     depth: DEFAULT_DEPTH,
+    mode: "lineage",
+    filters: noFilters(),
     trail: [],
   };
+
+  const options = filterOptionsFrom(graph);
 
   // --- chrome -------------------------------------------------------------
   const bar = el("header", "bar");
@@ -80,6 +95,20 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
   const depthValue = el("span", "depth-value", String(DEFAULT_DEPTH));
   depthLabel.append("Depth ", depth, depthValue);
 
+  const modes = el("div", "modes");
+  modes.setAttribute("role", "group");
+  modes.setAttribute("aria-label", "Layout");
+  const lineageButton = el("button", "mode current", "Lineage");
+  const socialButton = el("button", "mode", "Social");
+  lineageButton.type = "button";
+  socialButton.type = "button";
+  modes.append(lineageButton, socialButton);
+
+  const filterPanel = el("details", "filters");
+  const filterSummary = el("summary", undefined, "Filters");
+  const filterBody = el("div", "filter-body");
+  filterPanel.append(filterSummary, filterBody);
+
   const trail = el("nav", "trail");
   trail.setAttribute("aria-label", "Recently focused");
 
@@ -87,7 +116,7 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
   const card = el("aside", "card");
   card.hidden = true;
 
-  bar.append(search, depthLabel);
+  bar.append(search, modes, depthLabel, filterPanel);
   root.append(bar, results, trail, canvas, card);
 
   const cy = cytoscape({
@@ -100,25 +129,107 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
 
   const motionOk = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  function layoutFor(mode: Mode): cytoscape.LayoutOptions {
+    if (mode === "lineage") {
+      return {
+        name: "dagre",
+        // Generations run top to bottom; a force layout butchers a family tree.
+        rankDir: "TB",
+        nodeSep: 28,
+        rankSep: 64,
+        animate: motionOk,
+        animationDuration: 180,
+        fit: true,
+        padding: 32,
+      } as unknown as cytoscape.LayoutOptions;
+    }
+
+    return {
+      name: "fcose",
+      quality: "proof",
+      randomize: false,
+      // Closeness and shared context shorten edges, which is what makes clusters appear.
+      idealEdgeLength,
+      nodeSeparation: 90,
+      animate: motionOk,
+      animationDuration: 240,
+      fit: true,
+      padding: 32,
+    } as unknown as cytoscape.LayoutOptions;
+  }
+
   function render(): void {
-    const ego = egoGraph(graph, state.focus, { depth: state.depth });
-    const { nodes, edges } = elementsFor(graph, ego);
+    const kinds = state.mode === "social" ? (["parentage", "union", "relation"] as const) : undefined;
+    const ego = egoGraph(graph, state.focus, {
+      depth: state.depth,
+      ...(kinds === undefined ? {} : { kinds: [...kinds] }),
+    });
+
+    const { nodes, edges } = elementsFor(graph, ego, {
+      mode: state.mode,
+      filters: state.filters,
+    });
 
     cy.elements().remove();
     cy.add([...nodes, ...edges]);
-    cy.layout({
-      name: "dagre",
-      // Generations run top to bottom; a force layout butchers a family tree.
-      rankDir: "TB",
-      nodeSep: 28,
-      rankSep: 64,
-      animate: motionOk,
-      animationDuration: 180,
-      fit: true,
-      padding: 32,
-    } as cytoscape.LayoutOptions).run();
+    cy.layout(layoutFor(state.mode)).run();
 
     renderTrail();
+  }
+
+  function setMode(mode: Mode): void {
+    if (state.mode === mode) return;
+    state.mode = mode;
+    lineageButton.classList.toggle("current", mode === "lineage");
+    socialButton.classList.toggle("current", mode === "social");
+    // The focus person is deliberately untouched: section 11.2 keeps it across the switch.
+    render();
+  }
+
+  function buildFilters(): void {
+    const groups: [string, keyof FilterOptions, keyof Filters, keyof CompiledGraph["vocab"]][] = [
+      ["Relation", "relationTypes", "relationTypes", "relationType"],
+      ["Status", "statuses", "statuses", "relationStatus"],
+      ["Context", "contexts", "contexts", "context"],
+      ["Tag", "tags", "tags", "tag"],
+    ];
+
+    for (const [title, source, key, collection] of groups) {
+      const values = options[source];
+      if (values.length === 0) continue;
+
+      const group = el("fieldset", "filter-group");
+      group.append(el("legend", undefined, title));
+
+      for (const value of values) {
+        const row = el("label", "filter-row");
+        const box = el("input");
+        box.type = "checkbox";
+        box.checked = true;
+        box.addEventListener("change", () => {
+          const ticked = [...group.querySelectorAll<HTMLInputElement>("input")]
+            .filter((input) => input.checked)
+            .map((input) => input.value);
+
+          // All ticked reads as "not filtering", which keeps the view unchanged by default.
+          state.filters = {
+            ...state.filters,
+            [key]: ticked.length === values.length ? null : new Set(ticked),
+          };
+          render();
+        });
+        box.value = value;
+
+        row.append(box, el("span", undefined, labelFor(graph, collection, value)));
+        group.append(row);
+      }
+
+      filterBody.append(group);
+    }
+
+    if (options.tags.length + options.contexts.length + options.relationTypes.length === 0) {
+      filterPanel.hidden = true;
+    }
   }
 
   function focusOn(id: string): void {
@@ -205,6 +316,10 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     card.hidden = true;
   });
 
+  lineageButton.addEventListener("click", () => setMode("lineage"));
+  socialButton.addEventListener("click", () => setMode("social"));
+
+  buildFilters();
   render();
 }
 
