@@ -3,7 +3,13 @@ import { kinshipBetween, parentageOf, type Kinship, type Parentage } from "./der
 import { networkOf, shortestPath, type Hop, type Network, type PathOptions } from "./path.ts";
 import { TABLES, termFor } from "./term.ts";
 import type { Lang } from "./terms.ts";
-import { electiveTieBetween, unionIndexOf, type UnionIndex } from "./unions.ts";
+import {
+  electiveContextOf,
+  electiveTieBetween,
+  unionIndexOf,
+  type ElectiveContext,
+  type UnionIndex,
+} from "./unions.ts";
 
 /** Indexes built once and reused. Building them per query is the easy way to make this slow. */
 export interface KinshipContext {
@@ -11,14 +17,19 @@ export interface KinshipContext {
   parentage: Parentage;
   unions: UnionIndex;
   network: Network;
+  elective: ElectiveContext;
 }
 
 export function kinshipContextOf(graph: Graph): KinshipContext {
+  const parentage = parentageOf(graph);
+  const unions = unionIndexOf(graph);
+
   return {
     graph,
-    parentage: parentageOf(graph),
-    unions: unionIndexOf(graph),
+    parentage,
+    unions,
     network: networkOf(graph),
+    elective: electiveContextOf(graph, parentage, unions),
   };
 }
 
@@ -96,7 +107,7 @@ export function relate(
     };
   }
 
-  const elective = electiveTieBetween(context.parentage, context.unions, a, b);
+  const elective = electiveTieBetween(context.elective, a, b);
   if (elective !== null) {
     const term =
       elective.kind === "partner"

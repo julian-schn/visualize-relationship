@@ -1,3 +1,4 @@
+import { tryParseDate } from "../model/date.ts";
 import type { Graph } from "../model/graph.ts";
 import type { Union } from "../model/types.ts";
 import type { Parentage } from "./derive.ts";
@@ -51,10 +52,42 @@ function stepEnded(union: Union): boolean {
   return hasEnded(union) && !endedByDeath(union);
 }
 
+/**
+ * Whether the union was already over before this person existed. A step tie needs the union
+ * and the child to have overlapped: an ex-partner of your parent from before you were born
+ * was never your step-parent, and calling them a former one asserts a past that never
+ * happened. Unknown dates never exclude, so missing data stays permissive.
+ */
+function endedBeforeBirth(union: Union, birth: string | null | undefined): boolean {
+  const end = tryParseDate(union.to);
+  const born = tryParseDate(birth);
+  if (end?.latest == null || born?.earliest == null) return false;
+  return end.latest < born.earliest;
+}
+
 export type ElectiveTie =
   | { kind: "partner"; state: PartnerState }
   | { kind: "step"; relation: StepRelation; ended: boolean }
   | { kind: "in-law"; relation: InLawRelation };
+
+export interface ElectiveContext {
+  parentage: Parentage;
+  unions: UnionIndex;
+  /** A person's raw birth date string, for deciding whether a step tie could have existed. */
+  birthOf(id: string): string | null | undefined;
+}
+
+export function electiveContextOf(
+  graph: Graph,
+  parentage: Parentage,
+  unions: UnionIndex,
+): ElectiveContext {
+  return {
+    parentage,
+    unions,
+    birthOf: (id) => graph.people.get(id)?.birth?.date,
+  };
+}
 
 function parentIdsOf(parentage: Parentage, id: string): string[] {
   return parentage.parentsOf(id).map((edge) => edge.id);
@@ -81,12 +114,13 @@ function siblingsOf(parentage: Parentage, id: string): Set<string> {
  * no shared ancestor, and section 8 prefers the blood reading when both exist.
  */
 export function electiveTieBetween(
-  parentage: Parentage,
-  unions: UnionIndex,
+  context: ElectiveContext,
   a: string,
   b: string,
 ): ElectiveTie | null {
   if (a === b) return null;
+
+  const { parentage, unions } = context;
 
   for (const link of unions.partnersOf(a)) {
     if (link.id === b) return { kind: "partner", state: partnerState(link.union) };
@@ -100,6 +134,7 @@ export function electiveTieBetween(
     for (const parent of parentsOfA) {
       for (const link of unions.partnersOf(parent)) {
         if (link.id !== b) continue;
+        if (endedBeforeBirth(link.union, context.birthOf(a))) continue;
         return { kind: "step", relation: "parent", ended: stepEnded(link.union) };
       }
     }
@@ -110,6 +145,7 @@ export function electiveTieBetween(
     for (const parent of parentsOfB) {
       for (const link of unions.partnersOf(parent)) {
         if (link.id !== a) continue;
+        if (endedBeforeBirth(link.union, context.birthOf(b))) continue;
         return { kind: "step", relation: "child", ended: stepEnded(link.union) };
       }
     }
@@ -120,6 +156,9 @@ export function electiveTieBetween(
     for (const parent of parentsOfA) {
       for (const link of unions.partnersOf(parent)) {
         if (!parentsOfB.includes(link.id)) continue;
+        // Never step-siblings if the union was over before either of them existed.
+        if (endedBeforeBirth(link.union, context.birthOf(a))) continue;
+        if (endedBeforeBirth(link.union, context.birthOf(b))) continue;
         return { kind: "step", relation: "sibling", ended: stepEnded(link.union) };
       }
     }
