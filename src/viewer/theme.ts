@@ -25,7 +25,7 @@ export function tokensFor(appearance: Appearance): typeof LIGHT {
 }
 
 export function cytoscapeStyle(
-  mode: "lineage" | "social" = "lineage",
+  mode: "lineage" | "social" | "circle" = "lineage",
   appearance: Appearance = "light",
 ): StylesheetStyle[] {
   const { ground: GROUND, ink: INK, rule: RULE, signal: SIGNAL, dormant: DORMANT } =
@@ -41,11 +41,12 @@ export function cytoscapeStyle(
         shape: "round-rectangle",
         // Not 'label': that sizing mode is deprecated and leaves most nodes with no
         // computed box, so they never paint. A fixed plate also suits the drafting look.
-        width: 140,
-        height: 26,
-        "text-wrap": "ellipsis",
-        "text-max-width": "126px",
-        label: "data(label)",
+        width: 150,
+        height: 40,
+        // Two lines: the name, and underneath what this person is to the focus.
+        "text-wrap": "wrap",
+        "text-max-width": "134px",
+        label: "data(caption)",
         color: INK,
         "font-family": "IBM Plex Sans Condensed, sans-serif",
         "font-size": 12,
