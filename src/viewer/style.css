@@ -1,0 +1,214 @@
+/* Section 11.4. Fraunces, IBM Plex Sans Condensed and IBM Plex Mono are named first and are
+   not yet self-hosted in src/viewer/fonts/, so the stacks fall back to system faces until
+   the files are added. */
+:root {
+  --ground: #e3e5dc;
+  --ink: #1e211c;
+  --rule: #a8ac9c;
+  --signal: #7a2e3a;
+  --dormant: #6e7166;
+
+  --display: "Fraunces", Georgia, serif;
+  --label: "IBM Plex Sans Condensed", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #1e211c;
+    --ink: #e3e5dc;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--label);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+#app {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  height: 100%;
+  position: relative;
+}
+
+.bar {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.search {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 28rem;
+  padding: 0.35rem 0.5rem;
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  color: inherit;
+  font: inherit;
+}
+
+.depth {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  white-space: nowrap;
+  color: var(--dormant);
+}
+
+.depth-value {
+  font-family: var(--mono);
+  color: var(--ink);
+}
+
+.results {
+  position: absolute;
+  top: 3.25rem;
+  left: 1rem;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-width: 28rem;
+  background: var(--ground);
+  border: 1px solid var(--ink);
+}
+
+.hit {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  width: 100%;
+  padding: 0.35rem 0.6rem;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hit:hover {
+  background: var(--rule);
+}
+
+.hit-via {
+  color: var(--dormant);
+  font-size: 0.85em;
+}
+
+.trail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: baseline;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--rule);
+  font-size: 0.9em;
+}
+
+.crumb {
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--dormant);
+  font: inherit;
+  cursor: pointer;
+}
+
+.crumb:not(.current)::after {
+  content: " ›";
+}
+
+.crumb.current {
+  font-family: var(--display);
+  color: var(--signal);
+  cursor: default;
+}
+
+.canvas {
+  min-height: 0;
+}
+
+.card {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 2;
+  max-width: 24rem;
+  padding: 0.75rem 1rem;
+  background: var(--ground);
+  border: 1px solid var(--ink);
+}
+
+.card-name {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+
+.card-pronouns,
+.card-tags {
+  margin: 0.15rem 0 0;
+  color: var(--dormant);
+  font-size: 0.9em;
+}
+
+.card-dates {
+  margin: 0.15rem 0 0;
+  font-family: var(--mono);
+  font-size: 0.85em;
+}
+
+.card-notes {
+  margin: 0.5rem 0 0;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--rule);
+}
+
+.empty {
+  padding: 2rem;
+  color: var(--dormant);
+}
+
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 34rem) {
+  .bar {
+    flex-wrap: wrap;
+  }
+
+  .card {
+    left: 1rem;
+    right: 1rem;
+    max-width: none;
+  }
+}
