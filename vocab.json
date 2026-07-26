@@ -42,6 +42,13 @@
     { "key": "ended", "label": "Ended" },
     { "key": "unknown", "label": "Unknown" }
   ],
+  "relationEnd": [
+    { "key": "drift", "label": "Drift" },
+    { "key": "falling-out", "label": "Falling out" },
+    { "key": "moved-away", "label": "Moved away" },
+    { "key": "death", "label": "Death" },
+    { "key": "unknown", "label": "Unknown" }
+  ],
   "context": [
     { "key": "school", "label": "School" },
     { "key": "university", "label": "University" },

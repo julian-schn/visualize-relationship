@@ -34,6 +34,10 @@
       "$ref": "#/$defs/vocabKey",
       "description": "A key from vocab.relationStatus. A relation that ended is marked ended, never deleted."
     },
+    "endReason": {
+      "description": "A key from vocab.relationEnd, or null while the relation is ongoing. Why it ended, as distinct from status, which is only that it did.",
+      "oneOf": [{ "$ref": "#/$defs/vocabKey" }, { "type": "null" }]
+    },
     "context": {
       "type": "array",
       "uniqueItems": true,

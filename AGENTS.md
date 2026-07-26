@@ -240,7 +240,11 @@ Elective and social ties. This is where the interesting data lives.
 - `closeness` is 0..5, optional. Drives edge weight in the force layout.
 - `status` from `vocab.relationStatus`: `active`, `dormant`, `estranged`, `ended`, `unknown`.
   **Never delete a relation because it ended.** People fall out and come back. Set the status
-  and the `until` date.
+  and the `until` date. An ex-friend is `status: ended` with an `until`, exactly as an
+  ex-partner is a union with a `to` and an `endReason`.
+- `endReason` from `vocab.relationEnd`, or `null` while ongoing. Separate from `status`,
+  which records only *that* a tie ended. It has its own vocabulary rather than sharing
+  `unionEnd`, because a friendship does not end by divorce or annulment.
 - `context` is free-ish tags from `vocab.context`: `school`, `work`, `discord`, `music`,
   `childhood`, and so on. Additions are allowed under the provisional rule in 5.4.
 

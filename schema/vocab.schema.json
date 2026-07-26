@@ -12,6 +12,7 @@
     "unionType",
     "unionEnd",
     "relationStatus",
+    "relationEnd",
     "context",
     "tag"
   ],
@@ -29,6 +30,7 @@
     "unionType": { "$ref": "#/$defs/entryList" },
     "unionEnd": { "$ref": "#/$defs/entryList" },
     "relationStatus": { "$ref": "#/$defs/entryList" },
+    "relationEnd": { "$ref": "#/$defs/entryList" },
     "context": { "$ref": "#/$defs/entryList" },
     "tag": { "$ref": "#/$defs/entryList" }
   },
