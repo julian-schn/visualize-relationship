@@ -28,22 +28,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Detect maintenance command
-        id: command
-        run: |
-          if node -e "const p = require('./package.json'); process.exit(p.scripts?.['agent:maintenance'] ? 0 : 1)"; then
-            echo "available=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "Maintenance tooling arrives in milestone 10."
-          fi
-
       - name: Run maintenance
-        if: steps.command.outputs.available == 'true'
         run: npm run --silent agent:maintenance -- --format json > "$RUNNER_TEMP/maintenance.json"
 
       - name: Inspect report
-        if: steps.command.outputs.available == 'true'
         id: report
         run: |
           node -e "

@@ -549,7 +549,11 @@ Run it when asked, and at the start of any session that touches data.
 - Anything that touches more than 10 records at once
 
 Duplicate detection: name similarity, plus shared relations, plus overlapping dates. Report
-a score and the evidence, never a verdict.
+a score and the evidence, never a verdict. A shared name alone never reaches the threshold,
+because families reuse names and a wrong merge is very hard to undo.
+
+`agent:maintenance --fix` applies only the mechanical findings above. Everything else is
+printed and left alone.
 
 ### 13.3 Suggestions and proposals
 
@@ -699,4 +703,4 @@ Each milestone ends with green validation, green tests and one or more commits.
 10. **Agent tooling**: `find`, `inbox:apply`, `agent:maintenance`, report generators.
 11. **Polish**: keyboard shortcuts, exports, dark mode, reduced motion.
 
-Milestones 0 through 9 are done.
+Milestones 0 through 10 are done.
