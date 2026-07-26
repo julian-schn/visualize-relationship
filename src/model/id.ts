@@ -25,17 +25,23 @@ export class IdError extends Error {
 }
 
 /**
+ * Lowercased and stripped of accents, so "J\u00fcrgen" and "Juergen" compare equal. Shared with
+ * search, which has to match what someone types against what is written.
+ */
+export function fold(name: string): string {
+  let folded = name.toLowerCase();
+  for (const [pattern, replacement] of TRANSLITERATIONS) {
+    folded = folded.replace(pattern, replacement);
+  }
+  return folded.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+/**
  * Lowercase kebab slug from a display name. German umlauts expand the way German spells
  * them out; every other mark is stripped rather than expanded.
  */
 export function slugify(name: string): string {
-  let slug = name.toLowerCase();
-  for (const [pattern, replacement] of TRANSLITERATIONS) {
-    slug = slug.replace(pattern, replacement);
-  }
-  slug = slug
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+  const slug = fold(name)
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
