@@ -13,7 +13,7 @@ export const SIGNAL = "#7a2e3a";
 export const DORMANT = "#6e7166";
 export const GROUND = "#e3e5dc";
 
-export function cytoscapeStyle(): StylesheetStyle[] {
+export function cytoscapeStyle(mode: "lineage" | "social" = "lineage"): StylesheetStyle[] {
   return [
     {
       selector: "node",
@@ -22,16 +22,18 @@ export function cytoscapeStyle(): StylesheetStyle[] {
         "border-color": INK,
         "border-width": 1,
         shape: "round-rectangle",
-        width: "label",
-        height: 24,
-        padding: "6px",
+        // Not 'label': that sizing mode is deprecated and leaves most nodes with no
+        // computed box, so they never paint. A fixed plate also suits the drafting look.
+        width: 140,
+        height: 26,
+        "text-wrap": "ellipsis",
+        "text-max-width": "126px",
         label: "data(label)",
         color: INK,
-        "font-family": "'IBM Plex Sans Condensed', system-ui, sans-serif",
+        "font-family": "sans-serif",
         "font-size": 12,
         "text-valign": "center",
         "text-halign": "center",
-        "text-max-width": "160px",
       },
     },
     {
@@ -49,7 +51,7 @@ export function cytoscapeStyle(): StylesheetStyle[] {
         "border-color": SIGNAL,
         "border-width": 2,
         color: SIGNAL,
-        "font-family": "'Fraunces', Georgia, serif",
+        "font-family": "serif",
         "font-size": 14,
       },
     },
@@ -58,7 +60,7 @@ export function cytoscapeStyle(): StylesheetStyle[] {
       style: {
         width: 1,
         "line-color": INK,
-        "curve-style": "taxi",
+        "curve-style": mode === "lineage" ? "taxi" : "bezier",
         "taxi-direction": "downward",
         "target-arrow-shape": "none",
       },
@@ -74,7 +76,7 @@ export function cytoscapeStyle(): StylesheetStyle[] {
     },
     {
       selector: "edge[kind = 'union']",
-      style: { "curve-style": "straight", "line-color": INK, width: 1 },
+      style: { "curve-style": mode === "lineage" ? "straight" : "bezier", "line-color": INK, width: 1 },
     },
     {
       selector: "edge[kind = 'union'][?ended]",
@@ -90,7 +92,7 @@ export function cytoscapeStyle(): StylesheetStyle[] {
       },
     },
     {
-      selector: "edge[kind = 'relation'][closeness = null]",
+      selector: "edge[kind = 'relation'][^closeness]",
       style: { width: 1 },
     },
     {
@@ -104,14 +106,19 @@ export function cytoscapeStyle(): StylesheetStyle[] {
  * Closeness and shared context both shorten an edge, so people who are close, or who know
  * each other from several places, settle nearer together. fCoSE has no cluster parameter;
  * pulling harder on the edges that mean more is how the grouping emerges.
+ *
+ * The floor is well above the widest node label. Shorter than a node is wide and the layout
+ * cannot satisfy it: boxes pile on top of each other and the fit zooms into the heap.
  */
+const MIN_EDGE = 190;
+
 export function idealEdgeLength(edge: { data(key: string): unknown }): number {
   const closeness = edge.data("closeness");
   const contexts = edge.data("contexts");
 
-  const base = edge.data("kind") === "relation" ? 150 : 90;
-  const pull = (typeof closeness === "number" ? closeness : 2) * 14;
-  const shared = (typeof contexts === "number" ? contexts : 0) * 12;
+  const base = edge.data("kind") === "relation" ? 330 : 260;
+  const pull = (typeof closeness === "number" ? closeness : 2) * 16;
+  const shared = (typeof contexts === "number" ? contexts : 0) * 14;
 
-  return Math.max(40, base - pull - shared);
+  return Math.max(MIN_EDGE, base - pull - shared);
 }
