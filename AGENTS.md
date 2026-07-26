@@ -456,6 +456,13 @@ inlines each as a base64 `@font-face`. About 50K for the set: enough for these n
 far short of a webfont CDN's worth of glyphs nobody will read. Cytoscape's parser rejects a
 *quoted* stack, so the canvas names them unquoted.
 
+Chrome follows the same rule. Controls are square, because a rounded corner is dashboard
+furniture and nothing on a drafting chart has one. The sliders are drawn rather than left to
+the browser: a native range carries the operating system's accent, which on this page is a
+bright blue in a field of lichen and was the loudest thing on screen. Reading order across
+the toolbar is who and how, then how much, then the occasional tools against the right edge.
+The breadcrumb is an annotation on the drawing, not a band of chrome above it.
+
 Line work encodes meaning rather than decorating:
 
 - parentage: solid ink

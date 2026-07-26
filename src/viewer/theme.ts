@@ -38,18 +38,20 @@ export function cytoscapeStyle(
         "background-color": GROUND,
         "border-color": INK,
         "border-width": 1,
-        shape: "round-rectangle",
+        // Square: section 11.4 rules out rounded card chrome, and a person on a drafting
+        // chart is a plate with corners, not a UI card.
+        shape: "rectangle",
         // Not 'label': that sizing mode is deprecated and leaves most nodes with no
         // computed box, so they never paint. A fixed plate also suits the drafting look.
-        width: 150,
-        height: 40,
+        width: 152,
+        height: 38,
         // Two lines: the name, and underneath what this person is to the focus.
         "text-wrap": "wrap",
         "text-max-width": "134px",
         label: "data(caption)",
         color: INK,
         "font-family": "IBM Plex Sans Condensed, sans-serif",
-        "font-size": 12,
+        "font-size": 11.5,
         "text-valign": "center",
         "text-halign": "center",
       },
@@ -84,7 +86,9 @@ export function cytoscapeStyle(
         "border-width": 2,
         color: SIGNAL,
         "font-family": "Fraunces, serif",
-        "font-size": 14,
+        "font-size": 15,
+        width: 170,
+        height: 42,
       },
     },
     {
