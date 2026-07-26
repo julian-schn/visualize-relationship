@@ -28,6 +28,8 @@ const vocab: Vocab = {
   tag: [{ key: "maternal-side", label: "Maternal side" }],
 };
 
+const TODAY = "2026-07-26";
+
 const meta = { created: "2026-07-26", updated: "2026-07-26", author: "agent" as const };
 
 function personFile(id: string, extra: Partial<Person> = {}): SourceFile<Person> {
@@ -66,6 +68,7 @@ function check(records: Partial<RawRecords>): ReturnType<typeof validateRecords>
   return validateRecords(
     { people: [], unions: [], relations: [], notes: [], vocab, ...records },
     validators,
+    { today: TODAY },
   );
 }
 
@@ -125,6 +128,7 @@ describe("schema errors", () => {
         vocab: { version: 1 } as unknown as Vocab,
       },
       validators,
+      { today: TODAY },
     );
 
     expect(findings.every((finding) => finding.rule === "schema")).toBe(true);
