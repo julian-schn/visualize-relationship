@@ -94,6 +94,8 @@ schema/                JSON Schema per record type, and for vocab.json
 src/model/             types, loaders, id helpers, date parser
 src/kinship/           derivation engine (section 8)
 src/validate/          validation rules (section 10)
+src/viewer/            the single-page app, and the three fonts in fonts/
+src/agent/             find, inbox apply, maintenance (section 13)
 src/build/             compile + inline pipeline (section 12)
 
 .githooks/             git hooks (section 15)
@@ -101,11 +103,10 @@ src/build/             compile + inline pipeline (section 12)
 dist/                  committed build output; see 12.3
 ```
 
-Directories arrive with the milestone that needs them rather than sitting empty:
-`src/viewer/` and `src/agent/`, and `inbox/` with `processed/` and `staged/`, plus
-`suggestions/`, `proposals/` and `migrations/` for the agent workflow in section 13. The
-loader and the validator both treat a missing directory as empty, so nothing breaks while
-they do not exist.
+`inbox/` with `processed/` and `staged/`, plus `suggestions/`, `proposals/` and
+`migrations/`, are created on first use rather than kept empty. The loader and the validator
+both treat a missing directory as empty, which is tested, so nothing breaks before they
+exist.
 
 ---
 
@@ -326,7 +327,7 @@ Draw this line clearly and keep it drawn.
 - picking the least-wrong vocabulary key for an odd relationship
 - writing and rewriting notes
 - spotting that the data has drifted and proposing a fix
-- keeping docs, README and changelog honest
+- keeping AGENTS.md and the README honest
 - authoring migrations
 
 **Never agent**: anything the viewer needs at runtime, anything destructive, anything that
@@ -443,11 +444,10 @@ Type: `Fraunces` for the few display moments (kinship terms, the focus person's 
 `IBM Plex Sans Condensed` for node labels, `IBM Plex Mono` for dates and ids. All three
 self-hosted in `src/viewer/fonts/`, because there is no network at runtime.
 
-Not yet true: the files are not in the repository, so nothing renders in these faces. The
-page chrome names them first in each CSS stack and falls back to system faces. Node labels
-do not name them at all, because cytoscape paints to canvas and its parser rejects a quoted
-font stack, leaving only a generic family. Both come back the day the files land. Embedding
-them is a licensing and bundle-size decision for the human, not one an agent makes quietly.
+All three are Latin subsets under the OFL, with the licence beside them, and the build
+inlines each as a base64 `@font-face`. About 50K for the set: enough for these names, and
+far short of a webfont CDN's worth of glyphs nobody will read. Cytoscape's parser rejects a
+*quoted* stack, so the canvas names them unquoted.
 
 Line work encodes meaning rather than decorating:
 
