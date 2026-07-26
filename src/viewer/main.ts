@@ -14,6 +14,7 @@ import {
 import { relate } from "../kinship/relate.ts";
 import { contextFor, ribbonMidpoint, ribbonNodes } from "./ribbon.ts";
 import { searchPeople } from "./search.ts";
+import { yearRangeOf } from "./timeline.ts";
 import { cytoscapeStyle, idealEdgeLength } from "./theme.ts";
 
 cytoscape.use(dagre);
@@ -37,6 +38,8 @@ interface State {
   filters: Filters;
   /** The other end of a relate query, or null when not relating. */
   relateTo: string | null;
+  /** The year the scrubber is parked on, or null for the whole record. */
+  year: number | null;
   /** Previously focused people, most recent last. Section 11.3's breadcrumb trail. */
   trail: string[];
 }
@@ -75,6 +78,7 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     mode: "lineage",
     filters: noFilters(),
     relateTo: null,
+    year: null,
     trail: [],
   };
 
@@ -124,6 +128,25 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
   const hops = el("ol", "hops");
   hops.hidden = true;
 
+  // The scrubber only appears when the data has dates to scrub through.
+  const span = yearRangeOf(graph, new Date().getFullYear());
+  const scrubber = el("div", "scrubber");
+  const scrubToggle = el("button", "mode", "Time");
+  scrubToggle.type = "button";
+  const scrubYear = el("input");
+  scrubYear.type = "range";
+  scrubYear.setAttribute("aria-label", "Show the graph as it stood in this year");
+  const scrubValue = el("span", "scrub-value");
+  if (span !== null) {
+    scrubYear.min = String(span.min);
+    scrubYear.max = String(span.max);
+    scrubYear.value = String(span.max);
+    scrubValue.textContent = "all";
+  }
+  scrubYear.hidden = true;
+  scrubber.append(scrubToggle, scrubYear, scrubValue);
+  if (span === null) scrubber.hidden = true;
+
   const trail = el("nav", "trail");
   trail.setAttribute("aria-label", "Recently focused");
 
@@ -131,7 +154,7 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
   const card = el("aside", "card");
   card.hidden = true;
 
-  bar.append(search, modes, relateButton, depthLabel, filterPanel);
+  bar.append(search, modes, relateButton, depthLabel, scrubber, filterPanel);
   root.append(bar, results, trail, canvas, term, hops, card);
 
   const cy = cytoscape({
@@ -310,6 +333,7 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     const { nodes, edges } = elementsFor(graph, ego, {
       mode: state.mode,
       filters: state.filters,
+      year: state.year,
     });
 
     cy.elements().remove();
@@ -470,6 +494,22 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
 
   cy.on("mouseout", "node", () => {
     card.hidden = true;
+  });
+
+  scrubToggle.addEventListener("click", () => {
+    const arming = state.year === null;
+    scrubToggle.classList.toggle("current", arming);
+    scrubYear.hidden = !arming;
+
+    state.year = arming ? Number(scrubYear.value) : null;
+    scrubValue.textContent = arming ? scrubYear.value : "all";
+    render();
+  });
+
+  scrubYear.addEventListener("input", () => {
+    state.year = Number(scrubYear.value);
+    scrubValue.textContent = scrubYear.value;
+    render();
   });
 
   relateButton.addEventListener("click", () => {

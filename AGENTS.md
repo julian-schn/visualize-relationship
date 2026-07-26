@@ -407,7 +407,10 @@ nothing about couples, and weighting the union edges made no difference.
 - Click to focus, breadcrumb trail of previously focused people
 - **Relate two people**: pick A and B, get the path plus the derived term
 - Timeline scrubber: show the graph as it stood in year Y (hide unborn, grey the dead,
-  hide unions and relations outside their date range)
+  hide unions and relations outside their date range). An unknown date never hides anyone:
+  most of a hand-kept graph is partly dated, and a scrubber that emptied the screen over
+  missing birth years would read as broken. The ego shell is not recomputed per year, so
+  someone reachable today can appear unconnected in a year before their union began.
 - Filters: relation type, status, tag, context, branch
 - Hover card: name, pronouns, dates, tags, first lines of notes. Click opens the full note
   in a panel
@@ -696,4 +699,4 @@ Each milestone ends with green validation, green tests and one or more commits.
 10. **Agent tooling**: `find`, `inbox:apply`, `agent:maintenance`, report generators.
 11. **Polish**: keyboard shortcuts, exports, dark mode, reduced motion.
 
-Milestones 0 through 8 are done.
+Milestones 0 through 9 are done.

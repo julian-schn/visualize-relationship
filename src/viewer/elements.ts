@@ -1,6 +1,7 @@
 import type { CompiledGraph } from "../build/compile.ts";
 import type { Ego } from "./ego.ts";
 import { descendantsOf, personPasses, relationPasses, type Filters } from "./filters.ts";
+import { presenceAt, relationActiveAt, unionActiveAt } from "./timeline.ts";
 
 export type Mode = "lineage" | "social";
 
@@ -44,6 +45,8 @@ export interface Elements {
 export interface ElementOptions {
   mode: Mode;
   filters?: Filters;
+  /** The year the scrubber is parked on, or null for the whole record. */
+  year?: number | null;
 }
 
 const INACTIVE = new Set(["ended", "estranged"]);
@@ -76,9 +79,16 @@ export function elementsFor(
   const visible = new Set<string>();
   const nodes: { data: NodeData }[] = [];
 
+  const year = options.year ?? null;
+
   for (const person of graph.people) {
     if (!ego.ids.has(person.id)) continue;
     if (filters !== undefined && !personPasses(person, filters, branchMembers)) continue;
+
+    // Not yet born is not yet in the picture; dead is greyed, not removed, because a
+    // family tree without its dead is not a family tree.
+    const presence = year === null ? null : presenceAt(person, year);
+    if (presence === "unborn") continue;
 
     visible.add(person.id);
     nodes.push({
@@ -87,7 +97,7 @@ export function elementsFor(
         label: person.names.display,
         distance: ego.distance.get(person.id) ?? 0,
         focus: ego.distance.get(person.id) === 0,
-        deceased: person.status === "deceased",
+        deceased: presence === null ? person.status === "deceased" : presence === "dead",
         kind: "person",
       },
     });
@@ -100,6 +110,7 @@ export function elementsFor(
   const scaffolded = new Map<string, string[]>();
   if (options.mode === "lineage") {
     for (const union of graph.unions) {
+      if (year !== null && !unionActiveAt(union, year)) continue;
       const partners = union.partners.filter(inside);
       if (partners.length >= 2) scaffolded.set(union.id, [...partners].sort());
     }
@@ -209,6 +220,7 @@ export function elementsFor(
   // Social mode has no ranks to protect, so partners join directly.
   if (options.mode === "social") {
     for (const union of graph.unions) {
+      if (year !== null && !unionActiveAt(union, year)) continue;
       const partners = union.partners.filter(inside);
       const ended =
         (union.to !== undefined && union.to !== null) ||
@@ -243,6 +255,7 @@ export function elementsFor(
     for (const relation of graph.relations) {
       if (!inside(relation.from) || !inside(relation.to)) continue;
       if (filters !== undefined && !relationPasses(relation, filters)) continue;
+      if (year !== null && !relationActiveAt(relation, year)) continue;
 
       edges.push({
         data: {

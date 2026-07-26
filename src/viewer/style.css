@@ -324,3 +324,16 @@ body {
 .hops li + li {
   margin-top: 0.15rem;
 }
+
+.scrubber {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.scrub-value {
+  min-width: 2.5rem;
+  font-family: var(--mono);
+  color: var(--dormant);
+}
