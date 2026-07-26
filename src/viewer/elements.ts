@@ -35,6 +35,11 @@ export interface EdgeData {
   closeness: number | null;
   /** Shared context count, so a force layout can cluster on it. */
   contexts: number;
+  /**
+   * Which of a union's two parallel hairlines this is. Section 11.4 draws a union doubled,
+   * and canvas has no double-line style, so it is two edges nudged either side of centre.
+   */
+  rail?: -1 | 1;
 }
 
 export interface Elements {
@@ -160,20 +165,23 @@ export function elementsFor(
     });
 
     for (const partner of partners) {
-      edges.push({
-        data: {
-          id: `u:${unionId}:${partner}`,
-          source: partner,
-          target: `n:${unionId}`,
-          kind: "union",
-          uncertain: false,
-          notByBirth: false,
-          ended,
-          closeness: null,
-          contexts: 0,
-          span: SCAFFOLD_SPAN,
-        },
-      });
+      for (const rail of [-1, 1] as const) {
+        edges.push({
+          data: {
+            id: `u:${unionId}:${partner}:${rail}`,
+            source: partner,
+            target: `n:${unionId}`,
+            kind: "union",
+            uncertain: false,
+            notByBirth: false,
+            ended,
+            closeness: null,
+            contexts: 0,
+            span: SCAFFOLD_SPAN,
+            rail,
+          },
+        });
+      }
     }
   }
 

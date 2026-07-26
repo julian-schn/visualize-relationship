@@ -397,9 +397,13 @@ exists in the layout graph only and never in the data, so section 5.2 still hold
 parentage spans two ranks so a generation is the same height either way. Setting a union
 edge's `minLen` to 0 is not an alternative: dagre's ranking requires at least 1 and throws.
 
-Not yet true: ordering within a rank does not keep a partner beside their spouse, so a
-sibling connector can run behind an unrelated box. Dagre orders by crossing count and knows
-nothing about couples, and weighting the union edges made no difference.
+Dagre orders a rank by crossing count and knows nothing about couples, so a second pass
+reseats each rank to put partners next to each other. It only reassigns people to the slots
+the rank already had, inventing no positions, so spacing and alignment survive.
+
+What remains: a sibling connector can still pass behind a spouse, because siblings and
+spouses share one rank and cannot both be contiguous when someone is in both groups. That
+needs a layout engine built for family trees rather than a generic layered DAG.
 
 ### 11.3 Features
 
@@ -450,8 +454,8 @@ Line work encodes meaning rather than decorating:
 - parentage: solid ink
 - parentage with `confidence` below certain: dashed
 - non-birth parentage: solid with a small notch glyph at the child end
-- union: doubled hairline, broken once where the union ended — currently a single hairline
-  into the marriage point, dotted when ended; canvas has no double-line style
+- union: doubled hairline into the marriage point, broken where the union ended. Canvas has
+  no double-line style, so it is two edges nudged either side of centre
 - social: single line, thickness from `closeness`
 - ended or estranged: dotted, in `--dormant`
 
