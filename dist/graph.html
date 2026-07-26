@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relationship graph</title>
+<style>
+:root {
+  --ground: #e3e5dc;
+  --ink: #1e211c;
+  --rule: #a8ac9c;
+  --signal: #7a2e3a;
+  --dormant: #6e7166;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #1e211c;
+    --ink: #e3e5dc;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 2rem;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.summary {
+  margin: 0 0 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.note {
+  margin: 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+  color: var(--dormant);
+  max-width: 46ch;
+}
+
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="application/json" id="graph">
+{"version":1,"builtFrom":{"people":0,"unions":0,"relations":0},"people":[],"unions":[],"relations":[],"vocab":{"version":1,"relationType":[{"key":"friend","label":"Friend","symmetric":true},{"key":"best-friend","label":"Best friend","symmetric":true},{"key":"acquaintance","label":"Acquaintance","symmetric":true},{"key":"colleague","label":"Colleague","symmetric":true},{"key":"mentor","label":"Mentor","symmetric":false,"inverse":"mentee"},{"key":"mentee","label":"Mentee","symmetric":false,"inverse":"mentor"},{"key":"rival","label":"Rival","symmetric":false},{"key":"chosen-family","label":"Chosen family","symmetric":true}],"parentKind":[{"key":"birth","label":"Birth"},{"key":"adoptive","label":"Adoptive"},{"key":"step","label":"Step"},{"key":"foster","label":"Foster"},{"key":"guardian","label":"Guardian"},{"key":"donor","label":"Donor"},{"key":"unknown","label":"Unknown"}],"unionType":[{"key":"marriage","label":"Marriage"},{"key":"civil-partnership","label":"Civil partnership"},{"key":"partnership","label":"Partnership"},{"key":"engagement","label":"Engagement"},{"key":"liaison","label":"Liaison"},{"key":"unknown","label":"Unknown"}],"unionEnd":[{"key":"divorce","label":"Divorce"},{"key":"separation","label":"Separation"},{"key":"death","label":"Death"},{"key":"annulment","label":"Annulment"},{"key":"drift","label":"Drift"},{"key":"unknown","label":"Unknown"}],"relationStatus":[{"key":"active","label":"Active"},{"key":"dormant","label":"Dormant"},{"key":"estranged","label":"Estranged"},{"key":"ended","label":"Ended"},{"key":"unknown","label":"Unknown"}],"relationEnd":[{"key":"drift","label":"Drift"},{"key":"falling-out","label":"Falling out"},{"key":"moved-away","label":"Moved away"},{"key":"death","label":"Death"},{"key":"unknown","label":"Unknown"}],"context":[{"key":"school","label":"School"},{"key":"university","label":"University"},{"key":"work","label":"Work"},{"key":"discord","label":"Discord"},{"key":"music","label":"Music"},{"key":"childhood","label":"Childhood"},{"key":"neighbourhood","label":"Neighbourhood"}],"tag":[]},"parentsOf":{},"childrenOf":{},"redirects":{}}
+</script>
+<script>
+"use strict";(()=>{function m(n){let e=n.getElementById("graph");if(e===null)throw new Error("no inlined graph found");return JSON.parse(e.textContent??"")}function s(n,e){let{people:p,unions:i,relations:l}=n.builtFrom;e.replaceChildren();let r=document.createElement("h1");r.textContent="Relationship graph";let t=document.createElement("p");t.className="summary",t.textContent=`${p} people, ${i} unions, ${l} relations`;let o=document.createElement("p");o.className="note",o.textContent="The viewer arrives in milestone 6. This page proves the graph is inlined and readable offline.",e.append(r,t,o)}var a=document.getElementById("app");a!==null&&s(m(document),a);})();
+</script>
+</body>
+</html>

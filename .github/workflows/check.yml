@@ -39,12 +39,12 @@ jobs:
       - name: Test
         run: npm test
 
-      - name: Build when available
-        run: npm run build --if-present
+      - name: Build
+        run: npm run build
 
-      - name: Check committed build when available
+      - name: Check the committed build is not stale
         run: |
-          if [ -f dist/graph.html ] && [ -n "$(git status --short -- dist/graph.html)" ]; then
+          if [ -n "$(git status --short -- dist/graph.html)" ]; then
             echo "dist/graph.html is stale; run npm run build and commit the result" >&2
             exit 1
           fi

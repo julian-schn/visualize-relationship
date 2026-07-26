@@ -1,5 +1,5 @@
 #!/bin/sh
 set -eu
 
-npm run build --if-present
+npm run build
 npm test

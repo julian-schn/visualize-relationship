@@ -679,4 +679,4 @@ Each milestone ends with green validation, green tests and one or more commits.
 10. **Agent tooling**: `find`, `inbox:apply`, `agent:maintenance`, report generators.
 11. **Polish**: keyboard shortcuts, exports, dark mode, reduced motion.
 
-Milestones 0 through 4 are done.
+Milestones 0 through 5 are done.
