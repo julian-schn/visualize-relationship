@@ -1,6 +1,13 @@
 #!/bin/sh
 set -eu
 
+# Merge commits get their subject from git, not from an author, and section 13.4 bans
+# rebasing published history, so merging is the only way to sync a branch. Enforcing the
+# Conventional Commit format here would block the one workflow the rules allow.
+if [ -f "$(git rev-parse --git-dir)/MERGE_HEAD" ]; then
+  exit 0
+fi
+
 message_file=$1
 header=$(sed -n '1p' "$message_file")
 pattern='^(feat|fix|data|docs|refactor|test|build|ci|chore)\((schema|data|people|unions|relations|model|kinship|viewer|validate|build|agent|vocab|migrations|fixtures|docs|ci|hooks|deps)\)!?: [a-z0-9].+[^.]$'
