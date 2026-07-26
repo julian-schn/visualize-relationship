@@ -7,13 +7,30 @@ import type { StylesheetStyle } from "cytoscape";
  * Cytoscape draws to canvas and cannot read CSS custom properties, so the tokens are
  * repeated here. style.css holds the same five values for the surrounding page.
  */
-export const INK = "#1e211c";
-export const RULE = "#a8ac9c";
-export const SIGNAL = "#7a2e3a";
-export const DORMANT = "#6e7166";
-export const GROUND = "#e3e5dc";
+const LIGHT = {
+  ground: "#e3e5dc",
+  ink: "#1e211c",
+  rule: "#a8ac9c",
+  signal: "#7a2e3a",
+  dormant: "#6e7166",
+};
 
-export function cytoscapeStyle(mode: "lineage" | "social" = "lineage"): StylesheetStyle[] {
+/** Section 11.4: dark mode inverts ground and ink, and keeps signal. */
+const DARK = { ...LIGHT, ground: LIGHT.ink, ink: LIGHT.ground };
+
+export type Appearance = "light" | "dark";
+
+export function tokensFor(appearance: Appearance): typeof LIGHT {
+  return appearance === "dark" ? DARK : LIGHT;
+}
+
+export function cytoscapeStyle(
+  mode: "lineage" | "social" = "lineage",
+  appearance: Appearance = "light",
+): StylesheetStyle[] {
+  const { ground: GROUND, ink: INK, rule: RULE, signal: SIGNAL, dormant: DORMANT } =
+    tokensFor(appearance);
+
   return [
     {
       selector: "node",

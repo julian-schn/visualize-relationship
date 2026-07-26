@@ -47,9 +47,19 @@ export interface ElementOptions {
   filters?: Filters;
   /** The year the scrubber is parked on, or null for the whole record. */
   year?: number | null;
+  /** Section 11.3's toggles. Hiding is the caller's choice; the data is unchanged. */
+  showUncertain?: boolean;
+  showEnded?: boolean;
 }
 
 const INACTIVE = new Set(["ended", "estranged"]);
+
+function hasEnded(union: { to?: string | null; endReason?: string | null }): boolean {
+  return (
+    (union.to !== undefined && union.to !== null) ||
+    (union.endReason !== undefined && union.endReason !== null)
+  );
+}
 
 /**
  * Dagre ranks by edge, and its ranking rejects a length of 0, so partners cannot simply be
@@ -80,6 +90,8 @@ export function elementsFor(
   const nodes: { data: NodeData }[] = [];
 
   const year = options.year ?? null;
+  const showUncertain = options.showUncertain ?? true;
+  const showEnded = options.showEnded ?? true;
 
   for (const person of graph.people) {
     if (!ego.ids.has(person.id)) continue;
@@ -111,6 +123,7 @@ export function elementsFor(
   if (options.mode === "lineage") {
     for (const union of graph.unions) {
       if (year !== null && !unionActiveAt(union, year)) continue;
+      if (!showEnded && hasEnded(union)) continue;
       const partners = union.partners.filter(inside);
       if (partners.length >= 2) scaffolded.set(union.id, [...partners].sort());
     }
@@ -182,6 +195,10 @@ export function elementsFor(
 
     if (shared !== null && uniform) {
       const first = parents[0];
+      const routedUncertain =
+        first !== undefined && (first.confidence ?? "certain") !== "certain";
+      if (!showUncertain && routedUncertain) continue;
+
       edges.push({
         data: {
           id: `p:${shared}->${person.id}`,
@@ -200,6 +217,9 @@ export function elementsFor(
     }
 
     for (const edge of parents) {
+      const uncertain = edge.confidence !== undefined && edge.confidence !== "certain";
+      if (!showUncertain && uncertain) continue;
+
       edges.push({
         data: {
           id: `p:${edge.id}->${person.id}`,
@@ -221,6 +241,7 @@ export function elementsFor(
   if (options.mode === "social") {
     for (const union of graph.unions) {
       if (year !== null && !unionActiveAt(union, year)) continue;
+      if (!showEnded && hasEnded(union)) continue;
       const partners = union.partners.filter(inside);
       const ended =
         (union.to !== undefined && union.to !== null) ||
@@ -256,6 +277,7 @@ export function elementsFor(
       if (!inside(relation.from) || !inside(relation.to)) continue;
       if (filters !== undefined && !relationPasses(relation, filters)) continue;
       if (year !== null && !relationActiveAt(relation, year)) continue;
+      if (!showEnded && INACTIVE.has(relation.status)) continue;
 
       edges.push({
         data: {

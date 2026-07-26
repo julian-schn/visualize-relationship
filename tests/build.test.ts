@@ -77,6 +77,16 @@ describe("the offline gate", () => {
     expect(verifyOffline("<!-- https://example.com -->")).toEqual([]);
   });
 
+  it("allows an XML namespace, which is a name rather than a location", () => {
+    expect(verifyOffline('<script>const NS = "http://www.w3.org/2000/svg"</script>')).toEqual([]);
+    expect(verifyOffline('<script>const X = "http://www.w3.org/1999/xlink"</script>')).toEqual([]);
+  });
+
+  it("still catches a URL that only looks like a namespace", () => {
+    const found = verifyOffline('<script>const u = "http://www.w3.org/evil.js"</script>');
+    expect(found[0]?.rule).toBe("no-remote-url");
+  });
+
   it("allows a URL inside the inlined data, which is not code", () => {
     const html = `<script type="application/json" id="graph">{"u":"https://example.com"}</script>`;
     expect(verifyOffline(html)).toEqual([]);
