@@ -135,10 +135,15 @@ describe("loadGraph", () => {
 });
 
 describe("the repository itself", () => {
-  it("loads with no records yet", async () => {
+  // Asserts invariants rather than a record count, so this keeps working once people exist.
+  it("loads whatever is committed", async () => {
     const graph = await loadGraph(process.cwd());
 
     expect(graph.vocab.relationType.some((entry) => entry.key === "friend")).toBe(true);
-    expect(graph.people.size).toBe(0);
+
+    for (const [id, person] of graph.people) {
+      expect(person.id).toBe(id);
+      expect(person.status).not.toBe("merged");
+    }
   });
 });
