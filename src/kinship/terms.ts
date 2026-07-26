@@ -4,6 +4,12 @@ export type StepRelation = "parent" | "child" | "sibling";
 export type InLawRelation = "parent" | "child" | "sibling";
 
 /**
+ * `late` exists because a union ended by death is not a union someone left. Collapsing it
+ * into `former` would label a widowed person an ex-partner.
+ */
+export type PartnerState = "current" | "former" | "late";
+
+/**
  * Every phrase the engine can produce, in one language.
  *
  * Terms carry no gender. A record's only gender is `pronouns`, which is free text meant to
@@ -23,7 +29,8 @@ export interface TermTable {
   siblingDescendant(generations: number): string;
   /** degree 1 is a first cousin; removed 0 is same-generation. */
   cousin(degree: number, removed: number): string;
-  partner(ended: boolean): string;
+  partner(state: PartnerState): string;
+  /** `ended` excludes unions ended by death: a step-parent stays one when your parent dies. */
   step(relation: StepRelation, ended: boolean): string;
   inLaw(relation: InLawRelation): string;
   /** Marks a tie that reaches through an adoptive, foster or guardian edge. */

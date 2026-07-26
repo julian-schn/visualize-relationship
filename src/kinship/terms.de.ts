@@ -78,8 +78,13 @@ export const de: TermTable = {
   },
 
   // Ex- rather than "ehemalige", which would need a different adjective ending for every
-  // term it precedes.
-  partner: (ended) => (ended ? "Ex-Partnerin oder Ex-Partner" : "Partnerin oder Partner"),
+  // term it precedes. The bereaved case has to spell both out, since verstorbene and
+  // verstorbener disagree and there is no prefix that dodges it.
+  partner: (state) => {
+    if (state === "current") return "Partnerin oder Partner";
+    if (state === "late") return "verstorbene Partnerin oder verstorbener Partner";
+    return "Ex-Partnerin oder Ex-Partner";
+  },
 
   step: (relation, ended) => {
     const base =

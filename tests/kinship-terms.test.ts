@@ -123,10 +123,10 @@ describe("adoptive kin", () => {
 
 describe("elective and ended ties", () => {
   it("names partners and ex-partners", () => {
-    expect(en.partner(false)).toBe("partner");
-    expect(en.partner(true)).toBe("ex-partner");
-    expect(de.partner(false)).toBe("Partnerin oder Partner");
-    expect(de.partner(true)).toBe("Ex-Partnerin oder Ex-Partner");
+    expect(en.partner("current")).toBe("partner");
+    expect(en.partner("former")).toBe("ex-partner");
+    expect(de.partner("current")).toBe("Partnerin oder Partner");
+    expect(de.partner("former")).toBe("Ex-Partnerin oder Ex-Partner");
   });
 
   it("names step relations and former ones", () => {
@@ -161,8 +161,8 @@ describe("no term carries a gender", () => {
       term(1, 1, { full: false }),
       term(2, 2),
       term(3, 2),
-      en.partner(false),
-      en.partner(true),
+      en.partner("current"),
+      en.partner("former"),
       en.step("parent", false),
       en.inLaw("parent"),
       en.chosenFamily,
@@ -190,8 +190,8 @@ describe("no term carries a gender", () => {
       german(1, 1),
       german(2, 2),
       german(3, 2),
-      de.partner(false),
-      de.partner(true),
+      de.partner("current"),
+      de.partner("former"),
       de.inLaw("sibling"),
     ];
 

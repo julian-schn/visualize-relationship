@@ -49,7 +49,8 @@ export const en: TermTable = {
     return removes === 0 ? base : `${base} ${removed(removes)}`;
   },
 
-  partner: (ended) => (ended ? "ex-partner" : "partner"),
+  partner: (state) =>
+    state === "current" ? "partner" : state === "late" ? "late partner" : "ex-partner",
 
   step: (relation, ended) => `${ended ? "former " : ""}step-${relation}`,
 
