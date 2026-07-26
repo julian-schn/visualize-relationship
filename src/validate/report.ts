@@ -21,6 +21,28 @@ export function hasErrors(findings: readonly Finding[]): boolean {
   return findings.some((finding) => finding.level === "error");
 }
 
+/** Grouped by rule, with a count of each level last. */
+export function format(findings: readonly Finding[]): string {
+  if (findings.length === 0) return "validate: nothing to report\n";
+
+  const lines: string[] = [];
+  let lastRule = "";
+
+  for (const finding of findings) {
+    if (finding.rule !== lastRule) {
+      if (lastRule !== "") lines.push("");
+      lines.push(`${finding.level}: ${finding.rule}`);
+      lastRule = finding.rule;
+    }
+    lines.push(`  ${finding.where}: ${finding.message}`);
+  }
+
+  const errors = findings.filter((finding) => finding.level === "error").length;
+  lines.push("", `${errors} error(s), ${findings.length - errors} warning(s)`);
+
+  return `${lines.join("\n")}\n`;
+}
+
 /** Errors first, then a stable order, so two runs over the same data print identically. */
 export function sortFindings(findings: readonly Finding[]): Finding[] {
   const rank = (finding: Finding): number => (finding.level === "error" ? 0 : 1);

@@ -71,7 +71,10 @@ telemetry, no hosted site.
 Keep the dependency count low. Justify any addition in a commit body.
 
 - TypeScript, Node 20+
-- `esbuild` for bundling
+- `esbuild` for bundling, and for running the TypeScript behind the npm scripts via
+  `src/build/run.mjs`. Node 20 cannot execute TypeScript, and reusing a dependency the
+  viewer already needs beats adding a second one. The runner goes away if the minimum Node
+  version ever rises to one with native type stripping.
 - `ajv` for JSON Schema validation
 - `cytoscape` + `cytoscape-dagre` + `cytoscape-fcose` for the viewer
 - `vitest` for tests

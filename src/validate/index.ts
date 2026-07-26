@@ -6,7 +6,7 @@ import { sortFindings, type Finding } from "./report.ts";
 import { checkSchemas, loadValidators, type Validators } from "./schema.ts";
 import { checkWarnings } from "./warnings.ts";
 
-export { hasErrors, sortFindings } from "./report.ts";
+export { format, hasErrors, sortFindings } from "./report.ts";
 export type { Finding, Level } from "./report.ts";
 
 export interface ValidateOptions {
