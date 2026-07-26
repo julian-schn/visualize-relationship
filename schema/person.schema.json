@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "person.schema.json",
+  "title": "Person",
+  "description": "One human. Stored at people/<id>.json. Only parentage is recorded here; every other kin term is derived by the kinship engine.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "names", "status", "meta"],
+  "properties": {
+    "id": {
+      "$ref": "#/$defs/personId",
+      "description": "Permanent lowercase kebab slug. Equals the filename. Never changes, even when the person's name does."
+    },
+    "names": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["display"],
+      "properties": {
+        "display": {
+          "$ref": "#/$defs/nonEmptyString",
+          "description": "How this person is normally written. The only required name form."
+        },
+        "given": { "$ref": "#/$defs/nonEmptyString" },
+        "family": { "$ref": "#/$defs/nonEmptyString" },
+        "nicknames": {
+          "description": "Familiar or shortened personal names. Searchable.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "aka": {
+          "description": "Other aliases, public names or identities that are neither nicknames nor former names. Searchable.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "former": {
+          "description": "Names this person no longer uses. Searchable so older material stays findable.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["display"],
+            "properties": {
+              "display": { "$ref": "#/$defs/nonEmptyString" },
+              "until": { "$ref": "#/$defs/date" }
+            }
+          }
+        }
+      }
+    },
+    "pronouns": {
+      "description": "Ordered list of pronoun sets, most preferred first. Free text, not controlled vocabulary. Displayed exactly as written and never inferred from sex.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/nonEmptyString" }
+    },
+    "sex": {
+      "description": "Present only because pedigree charts conventionally shape nodes by it. Not identity, and never a source for pronouns.",
+      "enum": ["f", "m", "x", "unknown"]
+    },
+    "birth": { "$ref": "#/$defs/event" },
+    "death": { "$ref": "#/$defs/event" },
+    "status": {
+      "description": "merged marks a duplicate tombstone and requires mergedInto. It is never used for an active person.",
+      "enum": ["living", "deceased", "unknown", "merged"]
+    },
+    "mergedInto": {
+      "$ref": "#/$defs/personId",
+      "description": "The surviving person this tombstone redirects to. Required when status is merged, forbidden otherwise."
+    },
+    "parents": {
+      "description": "Zero or more parentage edges. Order is not meaningful. Siblings, cousins and in-laws are derived, never stored.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind"],
+        "properties": {
+          "id": { "$ref": "#/$defs/personId" },
+          "kind": {
+            "$ref": "#/$defs/vocabKey",
+            "description": "A key from vocab.parentKind."
+          },
+          "confidence": {
+            "description": "The only provenance field kept. Anything below certain renders as a dashed edge.",
+            "enum": ["certain", "probable", "uncertain"],
+            "default": "certain"
+          }
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/vocabKey" },
+      "description": "Keys from vocab.tag."
+    },
+    "links": {
+      "description": "Free key to location map for outside material, such as an Obsidian note path.",
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/nonEmptyString" }
+    },
+    "notes": {
+      "type": "string",
+      "description": "Inline markdown. Beyond roughly 20 lines move it to notes/<id>.md; the loader merges both and the sidecar wins."
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["created", "updated", "author"],
+      "properties": {
+        "created": { "$ref": "#/$defs/isoDate" },
+        "updated": { "$ref": "#/$defs/isoDate" },
+        "author": {
+          "enum": ["human", "agent"],
+          "description": "Who wrote the record. Agents must set this honestly."
+        }
+      }
+    }
+  },
+  "if": {
+    "properties": { "status": { "const": "merged" } },
+    "required": ["status"]
+  },
+  "then": {
+    "properties": { "mergedInto": { "$ref": "#/$defs/personId" } },
+    "required": ["mergedInto"]
+  },
+  "else": {
+    "properties": { "mergedInto": false }
+  },
+  "$defs": {
+    "personId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "vocabKey": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "date": {
+      "description": "EDTF subset, parsed by src/model/date.ts. The parser is the authority on what is well formed; null means unknown.",
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "isoDate": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "date": { "$ref": "#/$defs/date" },
+        "place": { "type": ["string", "null"], "minLength": 1 }
+      }
+    }
+  }
+}

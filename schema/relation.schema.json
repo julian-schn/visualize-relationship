@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "relation.schema.json",
+  "title": "Relation",
+  "description": "An elective or social tie. Stored at relations/<id>.json. Kin terms are never stored here; they are derived from parentage and unions.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "type", "from", "to", "symmetric", "status"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^r-[0-9]{4,}$",
+      "description": "Zero-padded, monotonic, never reused. Equals the filename."
+    },
+    "type": {
+      "$ref": "#/$defs/vocabKey",
+      "description": "A key from vocab.relationType."
+    },
+    "from": { "$ref": "#/$defs/personId" },
+    "to": { "$ref": "#/$defs/personId" },
+    "symmetric": {
+      "type": "boolean",
+      "description": "True means the tie is mutual and direction is meaningless. False means from holds the role toward to. Two people may hold different views of the same tie as two separate asymmetric relations; that is intended, not an error."
+    },
+    "closeness": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5,
+      "description": "Drives edge weight in the force layout."
+    },
+    "since": { "$ref": "#/$defs/date" },
+    "until": { "$ref": "#/$defs/date" },
+    "status": {
+      "$ref": "#/$defs/vocabKey",
+      "description": "A key from vocab.relationStatus. A relation that ended is marked ended, never deleted."
+    },
+    "context": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/vocabKey" },
+      "description": "Keys from vocab.context."
+    },
+    "note": { "type": "string" }
+  },
+  "$defs": {
+    "personId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "vocabKey": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "date": {
+      "description": "EDTF subset, parsed by src/model/date.ts. The parser is the authority on what is well formed; null means unknown.",
+      "type": ["string", "null"],
+      "minLength": 1
+    }
+  }
+}

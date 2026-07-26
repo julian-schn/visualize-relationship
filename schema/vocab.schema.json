@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "vocab.schema.json",
+  "title": "Vocabulary",
+  "description": "The single source of truth for every constrained string in the data. The record schemas type these fields as plain keys so that vocab.json stays the only place a term is defined.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "relationType",
+    "parentKind",
+    "unionType",
+    "unionEnd",
+    "relationStatus",
+    "context",
+    "tag"
+  ],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Bumped by a migration whenever the meaning of an existing key changes."
+    },
+    "relationType": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/relationTypeEntry" }
+    },
+    "parentKind": { "$ref": "#/$defs/entryList" },
+    "unionType": { "$ref": "#/$defs/entryList" },
+    "unionEnd": { "$ref": "#/$defs/entryList" },
+    "relationStatus": { "$ref": "#/$defs/entryList" },
+    "context": { "$ref": "#/$defs/entryList" },
+    "tag": { "$ref": "#/$defs/entryList" }
+  },
+  "$defs": {
+    "entryList": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/entry" }
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "label"],
+      "dependentRequired": { "provisional": ["added"] },
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "description": "What the data stores and code compares."
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Display text only. Never stored in a record."
+        },
+        "provisional": {
+          "type": "boolean",
+          "description": "Added mid-ingestion because nothing existing fitted. Requires a proposal filed the same run."
+        },
+        "added": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "description": "When a provisional entry appeared, so its age is mechanically checkable."
+        }
+      }
+    },
+    "relationTypeEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "label", "symmetric"],
+      "dependentRequired": { "provisional": ["added"] },
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "label": { "type": "string", "minLength": 1 },
+        "symmetric": {
+          "type": "boolean",
+          "description": "A relation record's symmetric field must agree with this."
+        },
+        "inverse": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "description": "The key describing the opposite viewpoint of an asymmetric tie. It labels the other direction; it does not imply a second stored relation."
+        },
+        "provisional": { "type": "boolean" },
+        "added": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        }
+      }
+    }
+  }
+}

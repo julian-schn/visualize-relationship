@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "union.schema.json",
+  "title": "Union",
+  "description": "A partnership. Stored at unions/<id>.json. Children are deliberately not listed here; parentage lives on the child so partial and messy data still loads.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "partners", "type"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^u-[0-9]{4,}$",
+      "description": "Zero-padded, monotonic, never reused. Equals the filename."
+    },
+    "partners": {
+      "description": "One or more people. One partner is legal for a single parent or an unknown other party; three or more is legal and gets no special casing.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/personId" }
+    },
+    "type": {
+      "$ref": "#/$defs/vocabKey",
+      "description": "A key from vocab.unionType."
+    },
+    "from": { "$ref": "#/$defs/date" },
+    "to": { "$ref": "#/$defs/date" },
+    "endReason": {
+      "description": "A key from vocab.unionEnd, or null while the union is ongoing.",
+      "oneOf": [{ "$ref": "#/$defs/vocabKey" }, { "type": "null" }]
+    },
+    "note": { "type": "string" }
+  },
+  "$defs": {
+    "personId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "vocabKey": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "date": {
+      "description": "EDTF subset, parsed by src/model/date.ts. The parser is the authority on what is well formed; null means unknown.",
+      "type": ["string", "null"],
+      "minLength": 1
+    }
+  }
+}
