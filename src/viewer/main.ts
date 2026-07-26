@@ -11,6 +11,8 @@ import {
   type FilterOptions,
   type Filters,
 } from "./filters.ts";
+import { relate } from "../kinship/relate.ts";
+import { contextFor, ribbonMidpoint, ribbonNodes } from "./ribbon.ts";
 import { searchPeople } from "./search.ts";
 import { cytoscapeStyle, idealEdgeLength } from "./theme.ts";
 
@@ -33,6 +35,8 @@ interface State {
   depth: number;
   mode: Mode;
   filters: Filters;
+  /** The other end of a relate query, or null when not relating. */
+  relateTo: string | null;
   /** Previously focused people, most recent last. Section 11.3's breadcrumb trail. */
   trail: string[];
 }
@@ -70,6 +74,7 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     depth: DEFAULT_DEPTH,
     mode: "lineage",
     filters: noFilters(),
+    relateTo: null,
     trail: [],
   };
 
@@ -109,6 +114,16 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
   const filterBody = el("div", "filter-body");
   filterPanel.append(filterSummary, filterBody);
 
+  const relateButton = el("button", "mode", "Relate");
+  relateButton.type = "button";
+  relateButton.title = "Pick someone to relate to the focus person (r)";
+
+  const term = el("div", "term");
+  term.hidden = true;
+
+  const hops = el("ol", "hops");
+  hops.hidden = true;
+
   const trail = el("nav", "trail");
   trail.setAttribute("aria-label", "Recently focused");
 
@@ -116,8 +131,8 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
   const card = el("aside", "card");
   card.hidden = true;
 
-  bar.append(search, modes, depthLabel, filterPanel);
-  root.append(bar, results, trail, canvas, card);
+  bar.append(search, modes, relateButton, depthLabel, filterPanel);
+  root.append(bar, results, trail, canvas, term, hops, card);
 
   const cy = cytoscape({
     container: canvas,
@@ -127,6 +142,7 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     maxZoom: 1.6,
   });
 
+  const kinship = contextFor(graph);
   const motionOk = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function layoutFor(mode: Mode): cytoscape.LayoutOptions {
@@ -167,12 +183,129 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     } as unknown as cytoscape.LayoutOptions;
   }
 
+  /**
+   * Element ids joining two people, going through a marriage point where they are not
+   * adjacent. Ids rather than collections: cytoscape's collection types do not compose, and
+   * a list of ids is easier to reason about than four flavours of Collection.
+   */
+  function between(a: string, b: string): string[] {
+    const direct = cy.$id(a).edgesWith(cy.$id(b));
+    if (direct.nonempty()) return direct.map((edge) => edge.id());
+
+    // Scaffolded parentage puts the marriage point in the middle, so the ribbon needs both
+    // halves and the point itself, or it would break in the gap.
+    for (const shared of cy.$id(a).neighborhood("node[kind = 'union']")) {
+      const left = cy.$id(a).edgesWith(shared);
+      const right = cy.$id(b).edgesWith(shared);
+      if (left.nonempty() && right.nonempty()) {
+        return [
+          shared.id(),
+          ...left.map((edge) => edge.id()),
+          ...right.map((edge) => edge.id()),
+        ];
+      }
+    }
+
+    return [];
+  }
+
+  function clearRibbon(): void {
+    cy.elements().removeClass("ribbon").removeClass("ribbon-pending");
+    term.hidden = true;
+    hops.hidden = true;
+  }
+
+  function drawRibbon(): void {
+    clearRibbon();
+    if (state.relateTo === null) return;
+
+    const found = relate(kinship, state.focus, state.relateTo, { lang: "en" });
+    const people = ribbonNodes(state.focus, found.path ?? []);
+
+    // --- the answer in words ---------------------------------------------
+    term.replaceChildren();
+    const headline = el("strong", "term-word", found.term ?? "connected");
+    term.append(headline);
+    if (found.chosenFamily) term.append(el("span", "term-aside", "chosen family"));
+    term.hidden = false;
+
+    hops.replaceChildren();
+    for (const hop of found.path ?? []) {
+      const to = byId.get(hop.to);
+      hops.append(el("li", undefined, `${hop.label}: ${to?.names.display ?? hop.to}`));
+    }
+    hops.hidden = (found.path ?? []).length === 0;
+
+    // --- the ribbon ------------------------------------------------------
+    const legs: string[][] = [];
+    for (let i = 0; i + 1 < people.length; i += 1) {
+      const a = people[i];
+      const b = people[i + 1];
+      if (a === undefined || b === undefined) continue;
+      legs.push([a, b, ...between(a, b)]);
+    }
+
+    const mark = (ids: readonly string[], ...classes: string[]): void => {
+      for (const id of ids) for (const name of classes) cy.$id(id).addClass(name);
+    };
+
+    if (legs.length === 0) {
+      cy.$id(state.focus).addClass("ribbon");
+      placeTerm(people);
+      return;
+    }
+
+    if (!motionOk) {
+      for (const leg of legs) mark(leg, "ribbon");
+      placeTerm(people);
+      return;
+    }
+
+    // Eases in hop by hop rather than all at once: section 11.4.
+    for (const leg of legs) mark(leg, "ribbon", "ribbon-pending");
+    legs.forEach((leg, index) => {
+      window.setTimeout(() => {
+        for (const id of leg) cy.$id(id).removeClass("ribbon-pending");
+        if (index === legs.length - 1) placeTerm(people);
+      }, index * 140);
+    });
+  }
+
+  /** The term sits on the ribbon's midpoint, which moves whenever the layout does. */
+  function placeTerm(people: readonly string[]): void {
+    const middle = ribbonMidpoint(people);
+    if (middle === null) return;
+
+    const node = cy.$id(middle);
+    if (node.empty()) return;
+
+    // Pinned to the midpoint, but never off the edge of the canvas.
+    const at = node.renderedPosition();
+    const box = canvas.getBoundingClientRect();
+    const half = term.offsetWidth / 2 || 80;
+    const x = Math.min(Math.max(at.x, half + 8), box.width - half - 8);
+
+    term.style.left = `${x}px`;
+    term.style.top = `${at.y + box.top - canvas.offsetTop}px`;
+  }
+
   function render(): void {
     const kinds = state.mode === "social" ? (["parentage", "union", "relation"] as const) : undefined;
     const ego = egoGraph(graph, state.focus, {
       depth: state.depth,
       ...(kinds === undefined ? {} : { kinds: [...kinds] }),
     });
+
+    // A relate query may reach outside the shell. Pulling those people in is the whole
+    // point: a ribbon that runs off the edge of the picture answers nothing.
+    if (state.relateTo !== null) {
+      const found = relate(kinship, state.focus, state.relateTo);
+      for (const id of ribbonNodes(state.focus, found.path ?? [])) {
+        if (ego.ids.has(id)) continue;
+        ego.ids.add(id);
+        ego.distance.set(id, 1);
+      }
+    }
 
     const { nodes, edges } = elementsFor(graph, ego, {
       mode: state.mode,
@@ -183,7 +316,9 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     cy.add([...nodes, ...edges]);
     canvas.dataset["nodes"] = String(nodes.length);
     canvas.dataset["edges"] = String(edges.length);
-    cy.layout(layoutFor(state.mode)).run();
+    const layout = cy.layout(layoutFor(state.mode));
+    layout.one("layoutstop", () => drawRibbon());
+    layout.run();
 
     renderTrail();
   }
@@ -248,6 +383,8 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     if (id === state.focus || !byId.has(id)) return;
     state.trail = [...state.trail.filter((seen) => seen !== state.focus), state.focus].slice(-6);
     state.focus = id;
+    state.relateTo = null;
+    relateButton.classList.remove("current");
     card.hidden = true;
     render();
   }
@@ -284,6 +421,13 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
       button.addEventListener("click", () => {
         search.value = "";
         results.hidden = true;
+
+        if (relateButton.classList.contains("current")) {
+          state.relateTo = hit.id;
+          render();
+          return;
+        }
+
         focusOn(hit.id);
       });
       item.append(button);
@@ -326,6 +470,51 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
 
   cy.on("mouseout", "node", () => {
     card.hidden = true;
+  });
+
+  relateButton.addEventListener("click", () => {
+    const arming = !relateButton.classList.contains("current");
+    relateButton.classList.toggle("current", arming);
+
+    if (arming) {
+      search.placeholder = "Relate to…";
+      search.focus();
+      return;
+    }
+
+    search.placeholder = "Search names";
+    state.relateTo = null;
+    clearRibbon();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.target instanceof HTMLInputElement && event.key !== "Escape") return;
+
+    if (event.key === "r") {
+      event.preventDefault();
+      relateButton.click();
+      return;
+    }
+
+    if (event.key === "/") {
+      event.preventDefault();
+      search.focus();
+      return;
+    }
+
+    if (event.key === "Escape") {
+      search.value = "";
+      results.hidden = true;
+      search.placeholder = "Search names";
+      relateButton.classList.remove("current");
+      state.relateTo = null;
+      clearRibbon();
+    }
+  });
+
+  // The term is pinned to a node, so it has to follow the viewport.
+  cy.on("pan zoom", () => {
+    if (state.relateTo !== null) placeTerm(ribbonNodes(state.focus, relate(kinship, state.focus, state.relateTo).path ?? []));
   });
 
   lineageButton.addEventListener("click", () => setMode("lineage"));
