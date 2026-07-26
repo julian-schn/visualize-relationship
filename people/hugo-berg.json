@@ -1,0 +1,20 @@
+{
+  "id": "hugo-berg",
+  "names": {
+    "display": "Hugo Berg"
+  },
+  "pronouns": [
+    "he/him"
+  ],
+  "birth": {
+    "date": "1964",
+    "place": null
+  },
+  "status": "living",
+  "parents": [],
+  "meta": {
+    "created": "2026-07-26",
+    "updated": "2026-07-26",
+    "author": "agent"
+  }
+}

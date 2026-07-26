@@ -1,0 +1,20 @@
+{
+  "id": "peter-hoffmann",
+  "names": {
+    "display": "Peter Hoffmann"
+  },
+  "pronouns": [
+    "he/him"
+  ],
+  "birth": {
+    "date": "1960",
+    "place": null
+  },
+  "status": "living",
+  "parents": [],
+  "meta": {
+    "created": "2026-07-26",
+    "updated": "2026-07-26",
+    "author": "agent"
+  }
+}

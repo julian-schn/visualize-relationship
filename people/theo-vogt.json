@@ -1,0 +1,29 @@
+{
+  "id": "theo-vogt",
+  "names": {
+    "display": "Theo Vogt"
+  },
+  "pronouns": [
+    "he/him"
+  ],
+  "birth": {
+    "date": "1965~",
+    "place": "Stuttgart"
+  },
+  "status": "living",
+  "parents": [
+    {
+      "id": "karl-vogt",
+      "kind": "birth"
+    },
+    {
+      "id": "marie-vogt",
+      "kind": "birth"
+    }
+  ],
+  "meta": {
+    "created": "2026-07-26",
+    "updated": "2026-07-26",
+    "author": "agent"
+  }
+}

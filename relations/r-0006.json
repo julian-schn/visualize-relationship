@@ -1,0 +1,16 @@
+{
+  "id": "r-0006",
+  "type": "chosen-family",
+  "from": "ruth-kestner",
+  "to": "jonas-hoffmann",
+  "symmetric": true,
+  "closeness": 5,
+  "since": "1990",
+  "until": null,
+  "status": "active",
+  "endReason": null,
+  "context": [
+    "childhood"
+  ],
+  "note": ""
+}

@@ -1,0 +1,17 @@
+{
+  "id": "r-0001",
+  "type": "best-friend",
+  "from": "agnes-vogt",
+  "to": "ruth-kestner",
+  "symmetric": true,
+  "closeness": 5,
+  "since": "1974",
+  "until": null,
+  "status": "active",
+  "endReason": null,
+  "context": [
+    "school",
+    "childhood"
+  ],
+  "note": ""
+}

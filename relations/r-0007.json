@@ -1,0 +1,16 @@
+{
+  "id": "r-0007",
+  "type": "colleague",
+  "from": "sofia-vogt",
+  "to": "mira-okafor",
+  "symmetric": true,
+  "closeness": 3,
+  "since": "2005",
+  "until": null,
+  "status": "dormant",
+  "endReason": null,
+  "context": [
+    "work"
+  ],
+  "note": ""
+}

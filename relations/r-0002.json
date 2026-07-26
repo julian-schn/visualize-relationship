@@ -1,0 +1,16 @@
+{
+  "id": "r-0002",
+  "type": "friend",
+  "from": "agnes-vogt",
+  "to": "bea-adler",
+  "symmetric": true,
+  "closeness": 2,
+  "since": "1985",
+  "until": "2011",
+  "status": "ended",
+  "endReason": "falling-out",
+  "context": [
+    "work"
+  ],
+  "note": ""
+}

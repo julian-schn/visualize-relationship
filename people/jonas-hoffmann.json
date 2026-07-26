@@ -1,0 +1,29 @@
+{
+  "id": "jonas-hoffmann",
+  "names": {
+    "display": "Jonas Hoffmann"
+  },
+  "pronouns": [
+    "he/him"
+  ],
+  "birth": {
+    "date": "1990-02-14",
+    "place": "Stuttgart"
+  },
+  "status": "living",
+  "parents": [
+    {
+      "id": "agnes-vogt",
+      "kind": "birth"
+    },
+    {
+      "id": "peter-hoffmann",
+      "kind": "birth"
+    }
+  ],
+  "meta": {
+    "created": "2026-07-26",
+    "updated": "2026-07-26",
+    "author": "agent"
+  }
+}

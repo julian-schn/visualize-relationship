@@ -1,0 +1,32 @@
+{
+  "id": "sofia-vogt",
+  "names": {
+    "display": "Sofia Vogt"
+  },
+  "pronouns": [
+    "she/they"
+  ],
+  "birth": {
+    "date": "1968-09",
+    "place": null
+  },
+  "status": "living",
+  "parents": [
+    {
+      "id": "karl-vogt",
+      "kind": "adoptive",
+      "confidence": "certain"
+    },
+    {
+      "id": "marie-vogt",
+      "kind": "adoptive",
+      "confidence": "certain"
+    }
+  ],
+  "notes": "Adopted in 1970. Full kin for every term the viewer shows.",
+  "meta": {
+    "created": "2026-07-26",
+    "updated": "2026-07-26",
+    "author": "agent"
+  }
+}

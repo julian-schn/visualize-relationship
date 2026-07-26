@@ -1,0 +1,16 @@
+{
+  "id": "r-0008",
+  "type": "acquaintance",
+  "from": "noor-vogt",
+  "to": "tomas-berg",
+  "symmetric": true,
+  "closeness": 2,
+  "since": "2015",
+  "until": null,
+  "status": "active",
+  "endReason": null,
+  "context": [
+    "music"
+  ],
+  "note": ""
+}

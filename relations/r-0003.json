@@ -1,0 +1,16 @@
+{
+  "id": "r-0003",
+  "type": "friend",
+  "from": "theo-vogt",
+  "to": "bea-adler",
+  "symmetric": true,
+  "closeness": 1,
+  "since": "1990",
+  "until": null,
+  "status": "estranged",
+  "endReason": null,
+  "context": [
+    "work"
+  ],
+  "note": ""
+}

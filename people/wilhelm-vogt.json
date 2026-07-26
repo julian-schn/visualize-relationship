@@ -1,0 +1,27 @@
+{
+  "id": "wilhelm-vogt",
+  "names": {
+    "display": "Wilhelm Vogt"
+  },
+  "pronouns": [
+    "he/him"
+  ],
+  "birth": {
+    "date": "1900~",
+    "place": null
+  },
+  "death": {
+    "date": "..1945",
+    "place": null
+  },
+  "status": "deceased",
+  "parents": [],
+  "tags": [
+    "paternal-side"
+  ],
+  "meta": {
+    "created": "2026-07-26",
+    "updated": "2026-07-26",
+    "author": "agent"
+  }
+}

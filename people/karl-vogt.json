@@ -1,0 +1,37 @@
+{
+  "id": "karl-vogt",
+  "names": {
+    "display": "Karl Vogt",
+    "nicknames": [
+      "Karli"
+    ]
+  },
+  "pronouns": [
+    "he/him"
+  ],
+  "birth": {
+    "date": "1930~",
+    "place": "Stuttgart"
+  },
+  "death": {
+    "date": "2005-11-02",
+    "place": "Stuttgart"
+  },
+  "status": "deceased",
+  "parents": [
+    {
+      "id": "wilhelm-vogt",
+      "kind": "birth",
+      "confidence": "uncertain"
+    }
+  ],
+  "tags": [
+    "paternal-side"
+  ],
+  "notes": "Birth year approximate; the family only ever said \"just after the crash\".",
+  "meta": {
+    "created": "2026-07-26",
+    "updated": "2026-07-26",
+    "author": "agent"
+  }
+}

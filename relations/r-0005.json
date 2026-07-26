@@ -1,0 +1,16 @@
+{
+  "id": "r-0005",
+  "type": "rival",
+  "from": "lena-hoffmann",
+  "to": "ruth-kestner",
+  "symmetric": false,
+  "closeness": 2,
+  "since": "2019",
+  "until": null,
+  "status": "active",
+  "endReason": null,
+  "context": [
+    "work"
+  ],
+  "note": "The other side of the same tie, deliberately asymmetric."
+}

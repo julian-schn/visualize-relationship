@@ -1,0 +1,23 @@
+{
+  "id": "ruth-kestner",
+  "names": {
+    "display": "Ruth Kestner",
+    "nicknames": [
+      "Ruthie"
+    ]
+  },
+  "pronouns": [
+    "she/her"
+  ],
+  "birth": {
+    "date": "1962-08-19",
+    "place": null
+  },
+  "status": "living",
+  "parents": [],
+  "meta": {
+    "created": "2026-07-26",
+    "updated": "2026-07-26",
+    "author": "agent"
+  }
+}

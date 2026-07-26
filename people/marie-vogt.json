@@ -1,0 +1,33 @@
+{
+  "id": "marie-vogt",
+  "names": {
+    "display": "Marie Vogt",
+    "former": [
+      {
+        "display": "Marie Adler",
+        "until": "1958"
+      }
+    ]
+  },
+  "pronouns": [
+    "she/her"
+  ],
+  "birth": {
+    "date": "1934-06-12",
+    "place": "Ulm"
+  },
+  "death": {
+    "date": "2018-03-04",
+    "place": "Stuttgart"
+  },
+  "status": "deceased",
+  "parents": [],
+  "tags": [
+    "maternal-side"
+  ],
+  "meta": {
+    "created": "2026-07-26",
+    "updated": "2026-07-26",
+    "author": "agent"
+  }
+}

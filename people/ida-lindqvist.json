@@ -1,0 +1,20 @@
+{
+  "id": "ida-lindqvist",
+  "names": {
+    "display": "Ida Lindqvist"
+  },
+  "pronouns": [
+    "they/them"
+  ],
+  "birth": {
+    "date": "1972",
+    "place": null
+  },
+  "status": "living",
+  "parents": [],
+  "meta": {
+    "created": "2026-07-26",
+    "updated": "2026-07-26",
+    "author": "agent"
+  }
+}

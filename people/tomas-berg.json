@@ -1,0 +1,30 @@
+{
+  "id": "tomas-berg",
+  "names": {
+    "display": "Tomas Berg"
+  },
+  "pronouns": [
+    "he/him"
+  ],
+  "birth": {
+    "date": "2010-05-01",
+    "place": "Freiburg"
+  },
+  "status": "living",
+  "parents": [
+    {
+      "id": "agnes-vogt",
+      "kind": "birth"
+    },
+    {
+      "id": "hugo-berg",
+      "kind": "birth"
+    }
+  ],
+  "notes": "Half-sibling to Jonas and Lena through Agnes.",
+  "meta": {
+    "created": "2026-07-26",
+    "updated": "2026-07-26",
+    "author": "agent"
+  }
+}

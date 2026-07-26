@@ -1,0 +1,16 @@
+{
+  "id": "r-0004",
+  "type": "mentor",
+  "from": "ruth-kestner",
+  "to": "lena-hoffmann",
+  "symmetric": false,
+  "closeness": 4,
+  "since": "2015",
+  "until": null,
+  "status": "active",
+  "endReason": null,
+  "context": [
+    "work"
+  ],
+  "note": ""
+}

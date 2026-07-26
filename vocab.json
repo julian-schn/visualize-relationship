@@ -58,5 +58,8 @@
     { "key": "childhood", "label": "Childhood" },
     { "key": "neighbourhood", "label": "Neighbourhood" }
   ],
-  "tag": []
+  "tag": [
+    { "key": "maternal-side", "label": "Maternal side" },
+    { "key": "paternal-side", "label": "Paternal side" }
+  ]
 }

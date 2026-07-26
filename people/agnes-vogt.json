@@ -1,0 +1,42 @@
+{
+  "id": "agnes-vogt",
+  "names": {
+    "display": "Agnes Vogt",
+    "nicknames": [
+      "Aggie"
+    ],
+    "aka": [
+      "A. Vogt"
+    ]
+  },
+  "pronouns": [
+    "she/her"
+  ],
+  "birth": {
+    "date": "1962-03-04",
+    "place": "Stuttgart"
+  },
+  "death": {
+    "date": null,
+    "place": null
+  },
+  "status": "living",
+  "parents": [
+    {
+      "id": "karl-vogt",
+      "kind": "birth"
+    },
+    {
+      "id": "marie-vogt",
+      "kind": "birth"
+    }
+  ],
+  "tags": [
+    "maternal-side"
+  ],
+  "meta": {
+    "created": "2026-07-26",
+    "updated": "2026-07-26",
+    "author": "agent"
+  }
+}

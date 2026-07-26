@@ -1,0 +1,20 @@
+{
+  "id": "bea-adler",
+  "names": {
+    "display": "Bea Adler"
+  },
+  "pronouns": [
+    "she/her"
+  ],
+  "birth": {
+    "date": "1961",
+    "place": null
+  },
+  "status": "living",
+  "parents": [],
+  "meta": {
+    "created": "2026-07-26",
+    "updated": "2026-07-26",
+    "author": "agent"
+  }
+}
