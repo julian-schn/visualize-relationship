@@ -37,6 +37,20 @@ export function cytoscapeStyle(mode: "lineage" | "social" = "lineage"): Styleshe
       },
     },
     {
+      // The marriage point: small, inked, unlabelled. Family charts have drawn one for a
+      // century, and dagre needs a node here anyway to keep partners level.
+      selector: "node[kind = 'union']",
+      style: {
+        width: 7,
+        height: 7,
+        shape: "ellipse",
+        "background-color": INK,
+        "border-width": 0,
+        label: "",
+        events: "no",
+      },
+    },
+    {
       // Everything outside the first ring fades rather than competing with the focus.
       selector: "node[distance > 1]",
       style: { "border-color": RULE, color: DORMANT },

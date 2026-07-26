@@ -10,6 +10,11 @@ export interface NodeData {
   distance: number;
   focus: boolean;
   deceased: boolean;
+  /**
+   * A union scaffolding node exists only so dagre ranks partners together. It is never a
+   * person, is not in the data, and nothing may focus or hover it.
+   */
+  kind: "person" | "union";
 }
 
 export interface EdgeData {
@@ -17,6 +22,8 @@ export interface EdgeData {
   source: string;
   target: string;
   kind: "parentage" | "union" | "relation";
+  /** Ranks to keep between the ends. Dagre rejects 0, so scaffolding uses 1 and direct 2. */
+  span: number;
   /** Parentage below `certain`, which section 11.4 renders dashed. */
   uncertain: boolean;
   /** Parentage that is not a birth edge, which gets the notch glyph. */
@@ -40,6 +47,15 @@ export interface ElementOptions {
 }
 
 const INACTIVE = new Set(["ended", "estranged"]);
+
+/**
+ * Dagre ranks by edge, and its ranking rejects a length of 0, so partners cannot simply be
+ * told to share a rank. Instead a union gets a scaffolding node one rank down that both
+ * partners point at, which forces them level, and their children hang off it. Direct
+ * parentage then spans two ranks so a generation is the same height either way.
+ */
+const SCAFFOLD_SPAN = 1;
+const DIRECT_SPAN = 2;
 
 /**
  * The shell as cytoscape elements. Only what is inside the ego shell and past the filters is
@@ -72,6 +88,7 @@ export function elementsFor(
         distance: ego.distance.get(person.id) ?? 0,
         focus: ego.distance.get(person.id) === 0,
         deceased: person.status === "deceased",
+        kind: "person",
       },
     });
   }
@@ -79,11 +96,99 @@ export function elementsFor(
   const inside = (id: string): boolean => visible.has(id);
   const edges: { data: EdgeData }[] = [];
 
+  // A union whose partners should carry a scaffolding node: two or more of them in view.
+  const scaffolded = new Map<string, string[]>();
+  if (options.mode === "lineage") {
+    for (const union of graph.unions) {
+      const partners = union.partners.filter(inside);
+      if (partners.length >= 2) scaffolded.set(union.id, [...partners].sort());
+    }
+  }
+
+  /** The union a child's parents all belong to, when exactly one covers them. */
+  const unionCovering = (parents: string[]): string | null => {
+    if (parents.length < 2) return null;
+    for (const [id, partners] of scaffolded) {
+      if (parents.length === partners.length && parents.every((p) => partners.includes(p))) {
+        return id;
+      }
+    }
+    return null;
+  };
+
+  for (const [unionId, partners] of scaffolded) {
+    const union = graph.unions.find((candidate) => candidate.id === unionId);
+    if (union === undefined) continue;
+
+    const ended =
+      (union.to !== undefined && union.to !== null) ||
+      (union.endReason !== undefined && union.endReason !== null);
+
+    nodes.push({
+      data: {
+        id: `n:${unionId}`,
+        label: "",
+        distance: 0,
+        focus: false,
+        deceased: false,
+        kind: "union",
+      },
+    });
+
+    for (const partner of partners) {
+      edges.push({
+        data: {
+          id: `u:${unionId}:${partner}`,
+          source: partner,
+          target: `n:${unionId}`,
+          kind: "union",
+          uncertain: false,
+          notByBirth: false,
+          ended,
+          closeness: null,
+          contexts: 0,
+          span: SCAFFOLD_SPAN,
+        },
+      });
+    }
+  }
+
   for (const person of graph.people) {
     if (!inside(person.id)) continue;
 
-    for (const edge of person.parents ?? []) {
-      if (!inside(edge.id)) continue;
+    const parents = (person.parents ?? []).filter((edge) => inside(edge.id));
+    const shared = unionCovering(parents.map((edge) => edge.id).sort());
+
+    // Routing through the scaffolding loses the per-parent line work, so it only happens
+    // when every parent edge agrees; otherwise dashes and notches would be invented.
+    const uniform =
+      shared !== null &&
+      parents.every(
+        (edge) =>
+          (edge.confidence ?? "certain") === (parents[0]?.confidence ?? "certain") &&
+          edge.kind === parents[0]?.kind,
+      );
+
+    if (shared !== null && uniform) {
+      const first = parents[0];
+      edges.push({
+        data: {
+          id: `p:${shared}->${person.id}`,
+          source: `n:${shared}`,
+          target: person.id,
+          kind: "parentage",
+          uncertain: first !== undefined && (first.confidence ?? "certain") !== "certain",
+          notByBirth: first !== undefined && first.kind !== "birth" && first.kind !== "unknown",
+          ended: false,
+          closeness: null,
+          contexts: 0,
+          span: SCAFFOLD_SPAN,
+        },
+      });
+      continue;
+    }
+
+    for (const edge of parents) {
       edges.push({
         data: {
           id: `p:${edge.id}->${person.id}`,
@@ -95,37 +200,41 @@ export function elementsFor(
           ended: false,
           closeness: null,
           contexts: 0,
+          span: DIRECT_SPAN,
         },
       });
     }
   }
 
-  for (const union of graph.unions) {
-    const partners = union.partners.filter(inside);
-    const ended =
-      (union.to !== undefined && union.to !== null) ||
-      (union.endReason !== undefined && union.endReason !== null);
+  // Social mode has no ranks to protect, so partners join directly.
+  if (options.mode === "social") {
+    for (const union of graph.unions) {
+      const partners = union.partners.filter(inside);
+      const ended =
+        (union.to !== undefined && union.to !== null) ||
+        (union.endReason !== undefined && union.endReason !== null);
 
-    // One edge per pair, so a three-person union draws as a triangle rather than a hub.
-    for (let i = 0; i < partners.length; i += 1) {
-      for (let j = i + 1; j < partners.length; j += 1) {
-        const a = partners[i];
-        const b = partners[j];
-        if (a === undefined || b === undefined) continue;
+      for (let i = 0; i < partners.length; i += 1) {
+        for (let j = i + 1; j < partners.length; j += 1) {
+          const a = partners[i];
+          const b = partners[j];
+          if (a === undefined || b === undefined) continue;
 
-        edges.push({
-          data: {
-            id: `u:${union.id}:${a}-${b}`,
-            source: a,
-            target: b,
-            kind: "union",
-            uncertain: false,
-            notByBirth: false,
-            ended,
-            closeness: null,
-            contexts: 0,
-          },
-        });
+          edges.push({
+            data: {
+              id: `u:${union.id}:${a}-${b}`,
+              source: a,
+              target: b,
+              kind: "union",
+              uncertain: false,
+              notByBirth: false,
+              ended,
+              closeness: null,
+              contexts: 0,
+              span: DIRECT_SPAN,
+            },
+          });
+        }
       }
     }
   }
@@ -146,6 +255,7 @@ export function elementsFor(
           ended: INACTIVE.has(relation.status),
           closeness: relation.closeness ?? null,
           contexts: relation.context?.length ?? 0,
+          span: DIRECT_SPAN,
         },
       });
     }

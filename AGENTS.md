@@ -391,10 +391,15 @@ force-directed hairball of 400 people is a screenshot, not a tool.
 
 Switching modes keeps the focus person and animates between layouts.
 
-Not yet true: rank is not quite generation. Dagre gives a union edge a rank of its own, so a
-spouse currently draws one row below their partner, as though they were their child. Setting
-the edge's `minLen` to 0 is not the fix; dagre's ranking requires at least 1 and throws.
-Doing it properly means adding a union node to the layout graph only, never to the data.
+Rank is generation. A union gets a marriage point one rank below its partners, both of whom
+point at it, which forces them level; the couple's children hang off that point. The node
+exists in the layout graph only and never in the data, so section 5.2 still holds. Direct
+parentage spans two ranks so a generation is the same height either way. Setting a union
+edge's `minLen` to 0 is not an alternative: dagre's ranking requires at least 1 and throws.
+
+Not yet true: ordering within a rank does not keep a partner beside their spouse, so a
+sibling connector can run behind an unrelated box. Dagre orders by crossing count and knows
+nothing about couples, and weighting the union edges made no difference.
 
 ### 11.3 Features
 
@@ -442,8 +447,8 @@ Line work encodes meaning rather than decorating:
 - parentage: solid ink
 - parentage with `confidence` below certain: dashed
 - non-birth parentage: solid with a small notch glyph at the child end
-- union: doubled hairline, broken once where the union ended — currently a single hairline,
-  dotted when ended, because canvas has no double-line style and faking it needs two edges
+- union: doubled hairline, broken once where the union ended — currently a single hairline
+  into the marriage point, dotted when ended; canvas has no double-line style
 - social: single line, thickness from `closeness`
 - ended or estranged: dotted, in `--dormant`
 
