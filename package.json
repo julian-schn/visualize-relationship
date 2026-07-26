@@ -12,7 +12,8 @@
     "prepare": "npm run hooks:install",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "validate": "node src/build/run.mjs src/validate/cli.ts"
+    "validate": "node src/build/run.mjs src/validate/cli.ts",
+    "build": "node src/build/run.mjs src/build/cli.ts"
   },
   "dependencies": {
     "ajv": "8.20.0",

@@ -1,0 +1,53 @@
+:root {
+  --ground: #e3e5dc;
+  --ink: #1e211c;
+  --rule: #a8ac9c;
+  --signal: #7a2e3a;
+  --dormant: #6e7166;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #1e211c;
+    --ink: #e3e5dc;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 2rem;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.summary {
+  margin: 0 0 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.note {
+  margin: 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+  color: var(--dormant);
+  max-width: 46ch;
+}
+
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
