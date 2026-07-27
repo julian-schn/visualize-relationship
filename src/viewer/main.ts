@@ -18,7 +18,7 @@ import { relate } from "../kinship/relate.ts";
 import { contextFor, ribbonMidpoint, ribbonNodes } from "./ribbon.ts";
 import { searchPeople } from "./search.ts";
 import { yearRangeOf } from "./timeline.ts";
-import { cytoscapeStyle, idealEdgeLength, tokensFor, type Appearance } from "./theme.ts";
+import { cytoscapeStyle, idealEdgeLength, TOKENS } from "./theme.ts";
 
 cytoscape.use(dagre);
 cytoscape.use(fcose);
@@ -216,15 +216,11 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
 
   root.append(canvas, sidebar, focusPill, term, hops, card, status, results);
 
-
-  const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
-  const appearance = (): Appearance => (darkQuery.matches ? "dark" : "light");
-
   const cy = cytoscape({
     container: canvas,
     // The default mode, not a hardcoded one: circle draws curves, lineage draws taxi
     // corners, and starting on the wrong sheet gives the default view the wrong edges.
-    style: cytoscapeStyle(state.mode, appearance()),
+    style: cytoscapeStyle(state.mode),
     // Layout is applied per render; an unlaid-out graph flashes before dagre runs.
     layout: { name: "preset" },
     maxZoom: 1.6,
@@ -561,7 +557,7 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
   function setMode(mode: Mode): void {
     if (state.mode === mode) return;
     state.mode = mode;
-    cy.style(cytoscapeStyle(mode, appearance()));
+    cy.style(cytoscapeStyle(mode));
     for (const [key, button] of modeButtons) button.classList.toggle("current", key === mode);
     // The focus person is deliberately untouched: section 11.2 keeps it across the switch.
     render();
@@ -817,13 +813,13 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
 
   pngButton.addEventListener("click", () => {
     // Section 12 forbids the page reaching the network; a data URI never leaves it.
-    download("graph.png", cy.png({ full: false, scale: 2, bg: tokensFor(appearance()).ground }));
+    download("graph.png", cy.png({ full: false, scale: 2, bg: TOKENS.ground }));
   });
 
   svgButton.addEventListener("click", () => {
     const withSvg = cy as unknown as { svg?: (options: object) => string };
     if (withSvg.svg === undefined) return;
-    const markup = withSvg.svg({ full: false, scale: 1, bg: tokensFor(appearance()).ground });
+    const markup = withSvg.svg({ full: false, scale: 1, bg: TOKENS.ground });
     download("graph.svg", `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(markup)))}`);
   });
 
