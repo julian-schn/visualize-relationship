@@ -7,16 +7,18 @@ import type { StylesheetStyle } from "cytoscape";
  * Cytoscape draws to canvas and cannot read CSS custom properties, so the tokens are
  * repeated here. style.css holds the same five values for the surrounding page.
  */
+/* From the Graph Viewer Redesign. Cytoscape paints to canvas and cannot read a custom
+   property, so these repeat what style.css holds for the surrounding panes. */
 const LIGHT = {
-  ground: "#e3e5dc",
-  ink: "#1e211c",
-  rule: "#a8ac9c",
-  signal: "#7a2e3a",
-  dormant: "#6e7166",
+  ground: "#0d1219",
+  ink: "#e8eef5",
+  rule: "rgba(159,180,205,0.22)",
+  signal: "#9b8cf0",
+  dormant: "#62748a",
 };
 
-/** Section 11.4: dark mode inverts ground and ink, and keeps signal. */
-const DARK = { ...LIGHT, ground: LIGHT.ink, ink: LIGHT.ground };
+/** The design is a dark design; there is no second appearance to invert into. */
+const DARK = LIGHT;
 
 export type Appearance = "light" | "dark";
 
@@ -35,23 +37,24 @@ export function cytoscapeStyle(
     {
       selector: "node",
       style: {
-        "background-color": GROUND,
-        "border-color": INK,
+        "background-color": "#0d1219",
+        "background-opacity": 0.86,
+        "border-color": RULE,
         "border-width": 1,
         // Square: section 11.4 rules out rounded card chrome, and a person on a drafting
         // chart is a plate with corners, not a UI card.
-        shape: "rectangle",
+        shape: "round-rectangle",
         // Not 'label': that sizing mode is deprecated and leaves most nodes with no
         // computed box, so they never paint. A fixed plate also suits the drafting look.
-        width: 152,
-        height: 38,
+        width: 158,
+        height: 44,
         // Two lines: the name, and underneath what this person is to the focus.
         "text-wrap": "wrap",
         "text-max-width": "134px",
         label: "data(caption)",
         color: INK,
-        "font-family": "IBM Plex Sans Condensed, sans-serif",
-        "font-size": 11.5,
+        "font-family": "Schibsted Grotesk, sans-serif",
+        "font-size": 12,
         "text-valign": "center",
         "text-halign": "center",
       },
@@ -73,19 +76,21 @@ export function cytoscapeStyle(
     {
       // Everything outside the first ring fades rather than competing with the focus.
       selector: "node[distance > 1]",
-      style: { "border-color": RULE, color: DORMANT },
+      style: { "border-color": "rgba(159,180,205,0.12)", color: DORMANT },
     },
     {
       selector: "node[?deceased]",
-      style: { "border-style": "solid", color: DORMANT, "border-color": DORMANT },
+      style: { "border-style": "solid", color: DORMANT, "border-color": "rgba(98,116,138,0.5)" },
     },
     {
       selector: "node[?focus]",
       style: {
         "border-color": SIGNAL,
-        "border-width": 2,
-        color: SIGNAL,
-        "font-family": "Fraunces, serif",
+        "border-width": 1.5,
+        "background-color": SIGNAL,
+        "background-opacity": 0.12,
+        color: "#e8eef5",
+        "font-family": "Space Grotesk, sans-serif",
         "font-size": 15,
         width: 170,
         height: 42,
@@ -95,7 +100,7 @@ export function cytoscapeStyle(
       selector: "edge",
       style: {
         width: 1,
-        "line-color": INK,
+        "line-color": "rgba(159,180,205,0.30)",
         "curve-style": mode === "lineage" ? "taxi" : "bezier",
         "taxi-direction": "downward",
         "target-arrow-shape": "none",
@@ -108,11 +113,11 @@ export function cytoscapeStyle(
     {
       // The notch glyph at the child end, marking parentage that is not by birth.
       selector: "edge[kind = 'parentage'][?notByBirth]",
-      style: { "target-arrow-shape": "tee", "target-arrow-color": INK, "arrow-scale": 0.6 },
+      style: { "target-arrow-shape": "tee", "target-arrow-color": RULE, "arrow-scale": 0.6 },
     },
     {
       selector: "edge[kind = 'union']",
-      style: { "curve-style": "unbundled-bezier", "line-color": INK, width: 1 },
+      style: { "curve-style": "unbundled-bezier", "line-color": "rgba(159,180,205,0.34)", width: 1 },
     },
     {
       // The two rails of the doubled hairline, nudged either side of centre.

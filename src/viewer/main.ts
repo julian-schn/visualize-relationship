@@ -97,59 +97,105 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
 
   const options = filterOptionsFrom(graph);
 
-  // --- chrome -------------------------------------------------------------
-  const bar = el("header", "bar");
+  // --- chrome ---------------------------------------------------------------
+  // Laid out as the Graph Viewer Redesign has it: a floating sidebar, a focus pill overhead,
+  // the selected person on the right, the path bottom-left, and the tools bottom-right. The
+  // canvas is full-bleed underneath them all rather than a pane in a grid.
+  const canvas = el("div", "canvas");
+
+  const sidebar = el("aside", "pane sidebar");
+  const head = el("div", "sidebar-head");
+  const title = el("h1", "sidebar-title", "Relationship graph");
+  const counts = el("p", "counts");
+  head.append(title, counts);
+
+  const body = el("div", "sidebar-body");
+
   const search = el("input", "search");
   search.type = "search";
-  search.placeholder = "Search names";
+  search.placeholder = "Search any name";
   search.setAttribute("aria-label", "Search people by any name");
 
   const results = el("ul", "results");
   results.hidden = true;
 
-  const depthLabel = el("label", "depth");
+  const layoutSection = el("div", "section");
+  layoutSection.append(el("span", "pane-label", "Layout"));
+  const modeMeta: [Mode, string, string][] = [
+    ["circle", "Circle", "who these people are to one"],
+    ["lineage", "Lineage", "generations, top to bottom"],
+    ["social", "Social", "elective ties, clustered"],
+  ];
+  const modeButtons = new Map<Mode, HTMLButtonElement>();
+  for (const [key, name, note] of modeMeta) {
+    const button = el("button", key === "circle" ? "mode current" : "mode");
+    button.type = "button";
+    button.append(el("span", "mode-name", name), el("span", "mode-note", note));
+    button.addEventListener("click", () => setMode(key));
+    modeButtons.set(key, button);
+    layoutSection.append(button);
+  }
+
+  const depthSection = el("div", "section");
+  const depthHead = el("div", "depth-head");
+  const depthValue = el("span", "depth-value", `${DEFAULT_DEPTH} steps out`);
+  depthHead.append(el("span", "pane-label", "Depth"), depthValue);
   const depth = el("input");
   depth.type = "range";
   depth.min = String(MIN_DEPTH);
   depth.max = String(MAX_DEPTH);
   depth.value = String(DEFAULT_DEPTH);
   depth.setAttribute("aria-label", "How many steps out to show");
-  const depthValue = el("span", "depth-value", String(DEFAULT_DEPTH));
-  depthLabel.append("Depth ", depth, depthValue);
+  const scale = el("div", "scale");
+  for (let step = MIN_DEPTH; step <= MAX_DEPTH; step += 1) {
+    scale.append(el("span", undefined, String(step)));
+  }
+  depthSection.append(depthHead, depth, scale);
 
-  const modes = el("div", "modes");
-  modes.setAttribute("role", "group");
-  modes.setAttribute("aria-label", "Layout");
-  const circleButton = el("button", "mode current", "Circle");
-  const lineageButton = el("button", "mode", "Lineage");
-  const socialButton = el("button", "mode", "Social");
-  for (const button of [circleButton, lineageButton, socialButton]) button.type = "button";
-  modes.append(circleButton, lineageButton, socialButton);
+  const filterSection = el("div", "section");
+  filterSection.append(el("span", "pane-label", "Filters"));
+  const filterBody = el("div");
+  filterSection.append(filterBody);
 
-  const filterPanel = el("details", "filters");
-  const filterSummary = el("summary", undefined, "Filters");
-  const filterBody = el("div", "filter-body");
-  filterPanel.append(filterSummary, filterBody);
+  const viewSection = el("div", "section");
+  viewSection.append(el("span", "pane-label", "Line work"));
+  const viewBody = el("div");
+  viewSection.append(viewBody);
 
-  const relateButton = el("button", "mode", "Relate");
-  relateButton.type = "button";
-  relateButton.title = "Pick someone to relate to the focus person (r)";
+  body.append(search, layoutSection, depthSection, filterSection, viewSection);
+  sidebar.append(head, body);
+
+  // The trail rides in a pill over the drawing rather than in a band above it.
+  const focusPill = el("nav", "pane focus-pill");
+  focusPill.setAttribute("aria-label", "Recently focused");
+  const trail = el("span", "trail");
+  focusPill.append(el("span", "pane-label", "Focus"), trail);
 
   const term = el("div", "term");
   term.hidden = true;
 
-  const hops = el("ol", "hops");
+  const hops = el("ol", "pane hops");
   hops.hidden = true;
 
-  // The scrubber only appears when the data has dates to scrub through.
+  const card = el("aside", "pane card");
+  card.hidden = true;
+
+  // Bottom right: what is on screen, then the tools that act on it.
+  const status = el("div", "pane status");
+  const shown = el("span", undefined, "");
+  const relateButton = el("button", "tool", "Path");
+  relateButton.type = "button";
+  relateButton.title = "Relate the focus person to someone (r)";
+  const fitButton = el("button", "tool", "Fit");
+  fitButton.type = "button";
+
   const span = yearRangeOf(graph, new Date().getFullYear());
-  const scrubber = el("div", "scrubber");
-  const scrubToggle = el("button", "mode", "Time");
+  const scrubToggle = el("button", "tool", "Time");
   scrubToggle.type = "button";
   const scrubYear = el("input");
   scrubYear.type = "range";
   scrubYear.setAttribute("aria-label", "Show the graph as it stood in this year");
-  const scrubValue = el("span", "scrub-value");
+  const scrubValue = el("span", undefined, "");
   if (span !== null) {
     scrubYear.min = String(span.min);
     scrubYear.max = String(span.max);
@@ -157,32 +203,19 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
   }
   scrubYear.hidden = true;
   scrubValue.hidden = true;
-  scrubber.append(scrubToggle, scrubYear, scrubValue);
-  if (span === null) scrubber.hidden = true;
+  scrubYear.style.width = "88px";
 
-  const viewPanel = el("details", "filters view");
-  viewPanel.append(el("summary", undefined, "View"));
-  const viewBody = el("div", "filter-body");
-  viewPanel.append(viewBody);
-
-  const exports = el("div", "modes");
-  exports.setAttribute("role", "group");
-  exports.setAttribute("aria-label", "Export");
-  const pngButton = el("button", "mode", "PNG");
-  const svgButton = el("button", "mode", "SVG");
+  const pngButton = el("button", "tool", "PNG");
+  const svgButton = el("button", "tool", "SVG");
   pngButton.type = "button";
   svgButton.type = "button";
-  exports.append(pngButton, svgButton);
 
-  const trail = el("nav", "trail");
-  trail.setAttribute("aria-label", "Recently focused");
+  status.append(shown, relateButton, fitButton);
+  if (span !== null) status.append(scrubToggle, scrubYear, scrubValue);
+  status.append(pngButton, svgButton);
 
-  const canvas = el("div", "canvas");
-  const card = el("aside", "card");
-  card.hidden = true;
+  root.append(canvas, sidebar, focusPill, term, hops, card, status, results);
 
-  bar.append(search, modes, relateButton, depthLabel, scrubber, filterPanel, viewPanel, exports);
-  root.append(bar, results, trail, canvas, term, hops, card);
 
   const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
   const appearance = (): Appearance => (darkQuery.matches ? "dark" : "light");
@@ -285,6 +318,13 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     cy.elements().removeClass("ribbon").removeClass("ribbon-pending");
     term.hidden = true;
     hops.hidden = true;
+    fitSidebar();
+  }
+
+  /** Both left-hand panes are anchored, so the sidebar yields whatever the path pane takes. */
+  function fitSidebar(): void {
+    const taken = hops.hidden ? 0 : hops.offsetHeight + 16;
+    sidebar.style.maxHeight = `calc(100% - ${40 + taken}px)`;
   }
 
   function drawRibbon(): void {
@@ -305,11 +345,37 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     term.hidden = false;
 
     hops.replaceChildren();
-    for (const hop of found.path ?? []) {
-      const to = byId.get(hop.to);
-      hops.append(el("li", undefined, `${hop.label}: ${to?.names.display ?? hop.to}`));
-    }
+    const head = el("div", "hops-head");
+    const heading = el("div");
+    heading.append(
+      el("span", "pane-label", "Path"),
+      el("p", "hops-title", `${byId.get(state.focus)?.names.display ?? state.focus} → ${
+        byId.get(state.relateTo)?.names.display ?? state.relateTo
+      }`),
+    );
+    const close = el("button", "icon", "×");
+    close.type = "button";
+    close.setAttribute("aria-label", "Clear the path");
+    close.addEventListener("click", () => {
+      state.relateTo = null;
+      relateButton.classList.remove("on");
+      search.placeholder = "Search any name";
+      clearRibbon();
+    });
+    head.append(heading, close);
+    hops.append(head);
+
+    (found.path ?? []).forEach((hop, index) => {
+      const row = el("li");
+      row.append(
+        el("span", "hop-n", String(index + 1).padStart(2, "0")),
+        el("span", "hop-role", hop.label),
+        el("span", "hop-who", byId.get(hop.to)?.names.display ?? hop.to),
+      );
+      hops.append(row);
+    });
     hops.hidden = (found.path ?? []).length === 0;
+    fitSidebar();
 
     // --- the ribbon ------------------------------------------------------
     const legs: string[][] = [];
@@ -410,6 +476,13 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     canvas.dataset["edges"] = String(edges.length);
     // Who is actually drawn, so a check can assert content rather than counts. Counts prove
     // elements were added; only the ids prove the right people were.
+    counts.textContent =
+      `${graph.builtFrom.people} people · ${graph.builtFrom.unions} unions · ` +
+      `${graph.builtFrom.relations} ties`;
+    shown.textContent =
+      `${nodes.filter((node) => node.data.kind === "person").length} of ` +
+      `${graph.builtFrom.people} shown · ${state.mode} · depth ${state.depth}`;
+
     canvas.dataset["people"] = nodes
       .filter((node) => node.data.kind === "person")
       .map((node) => node.data.id)
@@ -417,6 +490,7 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     const layout = cy.layout(layoutFor(state.mode));
     layout.one("layoutstop", () => {
       if (state.mode === "lineage") reseat();
+      frame();
       drawRibbon();
     });
     layout.run();
@@ -425,6 +499,33 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
   }
 
   /** Puts spouses beside each other once dagre has finished ranking. */
+  /**
+   * The panes float over the canvas, so fitting to the canvas puts people underneath them.
+   * This fits to the rectangle the panes leave free instead: zoom to whichever axis is
+   * tighter, then pan the drawing's middle to that rectangle's middle.
+   */
+  function frame(): void {
+    const nodes = cy.nodes();
+    if (nodes.empty()) return;
+
+    const box = canvas.getBoundingClientRect();
+    const left = sidebar.getBoundingClientRect().right + 24;
+    const right = card.hidden ? box.width - 24 : card.getBoundingClientRect().left - 24;
+    const top = focusPill.getBoundingClientRect().bottom + 24;
+    const bottom = box.height - (hops.hidden ? 84 : Math.max(84, hops.offsetHeight + 40));
+
+    const free = { w: Math.max(240, right - left), h: Math.max(200, bottom - top) };
+    const bb = nodes.boundingBox();
+    if (bb.w === 0 || bb.h === 0) return;
+
+    const zoom = Math.min(free.w / bb.w, free.h / bb.h, 1.4);
+    cy.zoom(zoom);
+    cy.pan({
+      x: (left + right) / 2 - zoom * (bb.x1 + bb.x2) / 2,
+      y: (top + bottom) / 2 - zoom * (bb.y1 + bb.y2) / 2,
+    });
+  }
+
   function reseat(): void {
     const partnersOf = new Map<string, Set<string>>();
 
@@ -461,9 +562,7 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     if (state.mode === mode) return;
     state.mode = mode;
     cy.style(cytoscapeStyle(mode, appearance()));
-    circleButton.classList.toggle("current", mode === "circle");
-    lineageButton.classList.toggle("current", mode === "lineage");
-    socialButton.classList.toggle("current", mode === "social");
+    for (const [key, button] of modeButtons) button.classList.toggle("current", key === mode);
     // The focus person is deliberately untouched: section 11.2 keeps it across the switch.
     render();
   }
@@ -476,41 +575,40 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
       ["Tag", "tags", "tags", "tag"],
     ];
 
-    for (const [title, source, key, collection] of groups) {
+    for (const [heading, source, key, collection] of groups) {
       const values = options[source];
       if (values.length === 0) continue;
 
-      const group = el("fieldset", "filter-group");
-      group.append(el("legend", undefined, title));
+      const group = el("div", "pill-group");
+      group.append(el("span", undefined, heading));
+      const row = el("div", "pill-row");
 
       for (const value of values) {
-        const row = el("label", "filter-row");
-        const box = el("input");
-        box.type = "checkbox";
-        box.checked = true;
-        box.addEventListener("change", () => {
-          const ticked = [...group.querySelectorAll<HTMLInputElement>("input")]
-            .filter((input) => input.checked)
-            .map((input) => input.value);
-
-          // All ticked reads as "not filtering", which keeps the view unchanged by default.
+        const pill = el("button", "pill on", labelFor(graph, collection, value));
+        pill.type = "button";
+        pill.dataset["value"] = value;
+        pill.addEventListener("click", () => {
+          pill.classList.toggle("on");
+          const chosen = [...row.querySelectorAll<HTMLButtonElement>("button.on")].map(
+            (button) => button.dataset["value"] ?? "",
+          );
+          // Everything lit reads as "not filtering", so the view is unchanged by default and
+          // turning the last one off empties it rather than silently showing all.
           state.filters = {
             ...state.filters,
-            [key]: ticked.length === values.length ? null : new Set(ticked),
+            [key]: chosen.length === values.length ? null : new Set(chosen),
           };
           render();
         });
-        box.value = value;
-
-        row.append(box, el("span", undefined, labelFor(graph, collection, value)));
-        group.append(row);
+        row.append(pill);
       }
 
+      group.append(row);
       filterBody.append(group);
     }
 
     if (options.tags.length + options.contexts.length + options.relationTypes.length === 0) {
-      filterPanel.hidden = true;
+      filterSection.hidden = true;
     }
   }
 
@@ -519,7 +617,7 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     state.trail = [...state.trail.filter((seen) => seen !== state.focus), state.focus].slice(-6);
     state.focus = id;
     state.relateTo = null;
-    relateButton.classList.remove("current");
+    relateButton.classList.remove("on");
     card.hidden = true;
     render();
   }
@@ -557,7 +655,7 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
         search.value = "";
         results.hidden = true;
 
-        if (relateButton.classList.contains("current")) {
+        if (relateButton.classList.contains("on")) {
           state.relateTo = hit.id;
           render();
           return;
@@ -572,7 +670,7 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
 
   depth.addEventListener("input", () => {
     state.depth = Number(depth.value);
-    depthValue.textContent = depth.value;
+    depthValue.textContent = `${depth.value} steps out`;
     render();
   });
 
@@ -580,32 +678,88 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     focusOn(String(event.target.id()));
   });
 
-  cy.on("mouseover", "node", (event) => {
-    const person = byId.get(String(event.target.id()));
+  /** The selected person, as the design lays them out: who they are to the focus, then the
+   *  facts, then their ties, then what you can do about them. */
+  function showCard(id: string): void {
+    const person = byId.get(id);
     if (person === undefined) return;
 
     card.replaceChildren();
+    card.append(el("span", "pane-label", "Selected"));
     card.append(el("h2", "card-name", person.names.display));
 
+    const line = el("div");
+    const relation = id === state.focus ? null : relate(kinship, state.focus, id, {
+      lang: state.lang,
+      distinguishNotByBirth: state.distinguishAdoptive,
+    });
+    if (relation?.term != null) line.append(el("span", "card-term", relation.term));
     const pronouns = person.pronouns?.join(", ");
-    if (pronouns !== undefined) card.append(el("p", "card-pronouns", pronouns));
+    if (pronouns !== undefined) line.append(el("span", "card-pronouns", pronouns));
+    if (line.childElementCount > 0) card.append(line);
 
     const dates = describe(person);
-    if (dates !== "") card.append(el("p", "card-dates", dates));
+    if (dates !== "") {
+      const row = el("div", "card-dates");
+      row.append(
+        el("span", undefined, dates),
+        el("span", "card-status", person.status === "deceased" ? "deceased" : "living"),
+      );
+      card.append(row);
+    }
+
+    const notes = person.notes?.split("\n").slice(0, 3).join(" ");
+    if (notes !== undefined && notes !== "") card.append(el("p", "card-notes", notes));
 
     if (person.tags !== undefined && person.tags.length > 0) {
       card.append(el("p", "card-tags", person.tags.join(" · ")));
     }
 
-    const notes = person.notes?.split("\n").slice(0, 2).join(" ");
-    if (notes !== undefined && notes !== "") card.append(el("p", "card-notes", notes));
+    const ties = graph.relations.filter((tie) => tie.from === id || tie.to === id);
+    if (ties.length > 0) {
+      card.append(el("span", "pane-label", "Ties"));
+      for (const tie of ties.slice(0, 4)) {
+        const other = byId.get(tie.from === id ? tie.to : tie.from);
+        const row = el("div", "card-dates");
+        const left = el("div");
+        left.append(
+          el("div", "hop-who", other?.names.display ?? ""),
+          el("div", "card-pronouns", `${labelFor(graph, "relationType", tie.type)}${
+            tie.context?.length ? ` · ${tie.context.map((c) => labelFor(graph, "context", c)).join(", ")}` : ""
+          }`),
+        );
+        // Closeness as filled pips, which is how the design shows it.
+        const pips = el("span", "card-status");
+        pips.textContent = "●".repeat(tie.closeness ?? 0) + "○".repeat(5 - (tie.closeness ?? 0));
+        row.append(left, pips);
+        card.append(row);
+      }
+    }
+
+    const actions = el("div", "card-actions");
+    const makeFocus = el("button", "action", "Make focus");
+    makeFocus.type = "button";
+    makeFocus.disabled = id === state.focus;
+    makeFocus.addEventListener("click", () => focusOn(id));
+    const relating = el("button", state.relateTo === id ? "action on" : "action", "Relating");
+    relating.type = "button";
+    relating.addEventListener("click", () => {
+      state.relateTo = state.relateTo === id ? null : id;
+      relateButton.classList.toggle("on", state.relateTo !== null);
+      render();
+    });
+    actions.append(makeFocus, relating);
+    card.append(actions);
 
     card.hidden = false;
+  }
+
+  cy.on("mouseover", "node[kind = 'person']", (event) => {
+    showCard(String(event.target.id()));
+    cy.nodes().removeClass("hover");
+    event.target.addClass("hover");
   });
 
-  cy.on("mouseout", "node", () => {
-    card.hidden = true;
-  });
 
   function buildViewToggles(): void {
     const rows: [string, keyof State, boolean][] = [
@@ -614,11 +768,10 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
       ["Mark adoptive kin", "distinguishAdoptive", false],
     ];
 
-    const group = el("fieldset", "filter-group");
-    group.append(el("legend", undefined, "Show"));
+    const group = el("div");
 
     for (const [label, key, on] of rows) {
-      const row = el("label", "filter-row");
+      const row = el("label", "check");
       const box = el("input");
       box.type = "checkbox";
       box.checked = on;
@@ -630,10 +783,11 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
       group.append(row);
     }
 
-    const langGroup = el("fieldset", "filter-group");
-    langGroup.append(el("legend", undefined, "Kin terms"));
+    const langGroup = el("div", "section");
+    langGroup.append(el("span", "pane-label", "Kin terms"));
+    const langRow = el("div", "pill-row");
     for (const [code, label] of [["en", "English"], ["de", "Deutsch"]] as [Lang, string][]) {
-      const row = el("label", "filter-row");
+      const row = el("label", "check");
       const pick = el("input");
       pick.type = "radio";
       pick.name = "lang";
@@ -644,23 +798,22 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
         render();
       });
       row.append(pick, el("span", undefined, label));
-      langGroup.append(row);
+      langRow.append(row);
     }
+    langGroup.append(langRow);
 
     viewBody.append(group, langGroup);
   }
 
   /** Cytoscape paints to canvas, so it cannot follow the CSS media query on its own. */
-  darkQuery.addEventListener("change", () => {
-    cy.style(cytoscapeStyle(state.mode, appearance()));
-  });
-
   function download(name: string, href: string): void {
     const link = el("a");
     link.download = name;
     link.href = href;
     link.click();
   }
+
+  fitButton.addEventListener("click", () => frame());
 
   pngButton.addEventListener("click", () => {
     // Section 12 forbids the page reaching the network; a data URI never leaves it.
@@ -676,7 +829,7 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
 
   scrubToggle.addEventListener("click", () => {
     const arming = state.year === null;
-    scrubToggle.classList.toggle("current", arming);
+    scrubToggle.classList.toggle("on", arming);
     scrubYear.hidden = !arming;
 
     state.year = arming ? Number(scrubYear.value) : null;
@@ -692,8 +845,8 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
   });
 
   relateButton.addEventListener("click", () => {
-    const arming = !relateButton.classList.contains("current");
-    relateButton.classList.toggle("current", arming);
+    const arming = !relateButton.classList.contains("on");
+    relateButton.classList.toggle("on", arming);
 
     if (arming) {
       search.placeholder = "Relate to…";
@@ -701,7 +854,7 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
       return;
     }
 
-    search.placeholder = "Search names";
+    search.placeholder = "Search any name";
     state.relateTo = null;
     clearRibbon();
   });
@@ -742,8 +895,8 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
     if (event.key === "Escape") {
       search.value = "";
       results.hidden = true;
-      search.placeholder = "Search names";
-      relateButton.classList.remove("current");
+      search.placeholder = "Search any name";
+      relateButton.classList.remove("on");
       state.relateTo = null;
       clearRibbon();
     }
@@ -753,10 +906,6 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
   cy.on("pan zoom", () => {
     if (state.relateTo !== null) placeTerm(ribbonNodes(state.focus, relate(kinship, state.focus, state.relateTo).path ?? []));
   });
-
-  circleButton.addEventListener("click", () => setMode("circle"));
-  lineageButton.addEventListener("click", () => setMode("lineage"));
-  socialButton.addEventListener("click", () => setMode("social"));
 
   /** The person an arrow key should move to, or null when there is nobody that way. */
   function stepFrom(key: string): string | null {
@@ -775,11 +924,6 @@ export function start(graph: CompiledGraph, root: HTMLElement): void {
 
     return key === "ArrowLeft" ? (siblings[siblings.length - 1] ?? null) : (siblings[0] ?? null);
   }
-
-  cy.on("mouseover", "node", (event) => {
-    cy.nodes().removeClass("hover");
-    event.target.addClass("hover");
-  });
 
   buildFilters();
   buildViewToggles();

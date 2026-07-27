@@ -1,9 +1,12 @@
 The fonts in this directory are used under the SIL Open Font License 1.1.
 
-Fraunces
-  Copyright 2018 The Fraunces Project Authors (https://github.com/undercasetype/Fraunces)
+Space Grotesk
+  Copyright 2020 The Space Grotesk Project Authors (https://github.com/floriankarsten/space-grotesk)
 
-IBM Plex Sans Condensed, IBM Plex Mono
+Schibsted Grotesk
+  Copyright 2022 The Schibsted Grotesk Project Authors (https://github.com/deniskorolev/schibsted-grotesk)
+
+IBM Plex Mono
   Copyright 2017 IBM Corp. (https://github.com/IBM/plex)
 
 Each .woff2 here is the Latin subset only, taken from Google Fonts. The licence follows.

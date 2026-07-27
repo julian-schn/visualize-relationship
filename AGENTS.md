@@ -432,46 +432,44 @@ needs a layout engine built for family trees rather than a generic layered DAG.
 
 ### 11.4 Visual direction
 
-Do not ship the default graph-library look. The subject is a hand-kept kinship chart, so the
-reference is drafting and field notation, not a dashboard.
+The look is the Graph Viewer Redesign, designed in Claude Design against this repo's own
+source and implemented here rather than interpreted. It supersedes the drafting-and-field-
+notation direction this section used to carry: that was a different design, and a spec that
+describes a look the code does not have is a bug (section 16).
 
 Tokens:
 
 ```
---ground:  #E3E5DC   pale lichen, the paper
---ink:     #1E211C   near-black with a green cast, all structural line work
---rule:    #A8AC9C   hairlines, grid, inactive labels
---signal:  #7A2E3A   oxblood, focus person and the active path only
---dormant: #6E7166   the dead, the ended, the faded
+--page:       #080b10   near-black, the drawing surface
+--pane:       rgba(13,18,25,.82) over blur(18px), the floating panes
+--pane-line:  rgba(159,180,205,.13)  hairline borders
+--accent:     #9b8cf0   violet: focus, the active mode, the term, the ribbon
+--text:       #e8eef5 → #c3d0de → #94a5b8 → #62748a → #3d4b5c
 ```
 
-Dark mode inverts ground and ink, keeps signal.
+Dark only. The design is a dark design, and inventing a light variant with nothing to check
+it against is how the wrong thing gets built.
 
-Type: `Fraunces` for the few display moments (kinship terms, the focus person's name),
-`IBM Plex Sans Condensed` for node labels, `IBM Plex Mono` for dates and ids. All three
-self-hosted in `src/viewer/fonts/`, because there is no network at runtime.
+Type: `Space Grotesk` for display (the kinship term at 38px, the focus name, the title),
+`Schibsted Grotesk` for body and node labels, `IBM Plex Mono` for the small uppercase section
+labels and anything numeric. Latin subsets under the OFL, self-hosted in `src/viewer/fonts/`
+and inlined by the build, because the design links Google Fonts and section 2 forbids the
+page reaching the network.
 
-All three are Latin subsets under the OFL, with the licence beside them, and the build
-inlines each as a base64 `@font-face`. About 50K for the set: enough for these names, and
-far short of a webfont CDN's worth of glyphs nobody will read. Cytoscape's parser rejects a
-*quoted* stack, so the canvas names them unquoted.
+Chrome floats over a full-bleed canvas: a sidebar on the left holding search, layout, depth,
+filters and line work; a focus pill overhead; the selected person on the right; the path
+bottom-left; and what-is-shown plus the tools bottom-right. Panes float, so fitting the graph
+to the canvas would put people underneath them — the view frames to the rectangle the panes
+leave free instead.
 
-Chrome follows the same rule. Controls are square, because a rounded corner is dashboard
-furniture and nothing on a drafting chart has one. The sliders are drawn rather than left to
-the browser: a native range carries the operating system's accent, which on this page is a
-bright blue in a field of lichen and was the loudest thing on screen. Reading order across
-the toolbar is who and how, then how much, then the occasional tools against the right edge.
-The breadcrumb is an annotation on the drawing, not a band of chrome above it.
+Line work still encodes meaning, and the design kept every rule of it:
 
-Line work encodes meaning rather than decorating:
-
-- parentage: solid ink
+- parentage: solid
 - parentage with `confidence` below certain: dashed
-- non-birth parentage: solid with a small notch glyph at the child end
-- union: doubled hairline into the marriage point, broken where the union ended. Canvas has
-  no double-line style, so it is two edges nudged either side of centre
+- non-birth parentage: a notch glyph at the child end
+- union: doubled hairline into the marriage point, broken where the union ended
 - social: single line, thickness from `closeness`
-- ended or estranged: dotted, in `--dormant`
+- ended or estranged: dotted, in the faint grey
 
 **Signature element.** When two people are related, the path draws as one continuous ribbon
 in `--signal` that eases in hop by hop, with the derived kinship term set large in Fraunces

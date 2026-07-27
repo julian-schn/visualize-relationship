@@ -1,35 +1,35 @@
-/* Section 11.4. The three faces are self-hosted in fonts/ and inlined by the build, so these
-   stacks resolve without a network. The reference is drafting and field notation: square
-   corners, hairlines, one accent, and no chrome that a dashboard would have. */
+/* Section 11.4. Values come from the Graph Viewer Redesign in Claude Design; this file is the
+   implementation of that design, not an interpretation of it. The three faces are self-hosted
+   in fonts/ and inlined by the build, because the design links Google Fonts and section 2
+   forbids the page reaching the network. */
 :root {
-  --ground: #e3e5dc;
-  --ink: #1e211c;
-  --rule: #a8ac9c;
-  --signal: #7a2e3a;
-  --dormant: #6e7166;
+  --page: #080b10;
+  --pane: rgba(13, 18, 25, 0.82);
+  --pane-deep: rgba(8, 11, 16, 0.55);
+  --pane-line: rgba(159, 180, 205, 0.13);
+  --pane-line-strong: rgba(159, 180, 205, 0.22);
 
-  --display: "Fraunces", Georgia, serif;
-  --label: "IBM Plex Sans Condensed", system-ui, sans-serif;
+  --text: #e8eef5;
+  --text-2: #c3d0de;
+  --text-muted: #94a5b8;
+  --text-faint: #62748a;
+  --text-faintest: #3d4b5c;
+
+  --accent: #9b8cf0;
+  --accent-line: rgba(155, 140, 240, 0.32);
+  --accent-fill: rgba(155, 140, 240, 0.09);
+
+  --display: "Space Grotesk", system-ui, sans-serif;
+  --body: "Schibsted Grotesk", system-ui, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, monospace;
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ground: #1e211c;
-    --ink: #e3e5dc;
-  }
+  --pane-radius: 18px;
+  --control-radius: 11px;
+  --shadow: 0 32px 70px -30px rgba(0, 0, 0, 0.95);
 }
 
 * {
   box-sizing: border-box;
-}
-
-/* Nothing in a drafting chart has a rounded corner, and a UA-styled control brings its own. */
-input,
-button,
-select,
-fieldset {
-  border-radius: 0;
 }
 
 html,
@@ -39,226 +39,603 @@ body {
 
 body {
   margin: 0;
-  background: var(--ground);
-  color: var(--ink);
-  font-family: var(--label);
-  font-size: 15px;
-  line-height: 1.45;
+  background: var(--page);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(155, 140, 240, 0.25);
+}
+
+input[type="range"],
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--accent);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(159, 180, 205, 0.18);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 #app {
-  display: grid;
-  grid-template-rows: auto 1fr;
-  height: 100%;
   position: relative;
+  height: 100%;
+  overflow: hidden;
 }
 
-.bar {
+/* The drawing surface: a dot grid with a soft rise behind the middle, and a fade at each
+   edge so the graph reads as sitting on a plate rather than being cropped by the window. */
+.canvas {
+  position: absolute;
+  inset: 0;
+  background-color: var(--page);
+  background-image:
+    radial-gradient(120% 90% at 50% 45%, rgba(155, 140, 240, 0.055), rgba(8, 11, 16, 0) 62%),
+    radial-gradient(rgba(159, 180, 205, 0.1) 1px, transparent 1px);
+  background-size:
+    auto,
+    32px 32px;
+  background-position:
+    center,
+    -1px -1px;
+}
+
+#app::before,
+#app::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 26px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+#app::before {
+  top: 0;
+  background: linear-gradient(to bottom, var(--page), rgba(8, 11, 16, 0));
+}
+
+#app::after {
+  bottom: 0;
+  background: linear-gradient(to top, var(--page), rgba(8, 11, 16, 0));
+}
+
+/* --- panes ---------------------------------------------------------------- */
+
+.pane {
+  position: absolute;
+  z-index: 9;
+  border: 1px solid var(--pane-line);
+  border-radius: var(--pane-radius);
+  background: var(--pane);
+  backdrop-filter: blur(18px);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.pane-label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* --- left pane ------------------------------------------------------------ */
+
+.sidebar {
+  left: 20px;
+  top: 20px;
+  width: 272px;
   display: flex;
-  gap: 0.9rem;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--rule);
+  flex-direction: column;
+  max-height: calc(100% - 40px);
 }
 
-/* Everything from here sits against the right edge, so the bar spans the width instead of
-   clumping at one end of a wide screen. Reading order becomes: who and how, then how much,
-   then the occasional tools. */
-.bar > .scrubber {
-  margin-left: auto;
+.sidebar-head {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--pane-line);
 }
 
-.bar > .filters,
-.bar > .view,
-.bar > .modes:last-of-type {
-  color: var(--dormant);
+.sidebar-title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text);
 }
+
+.counts {
+  margin: 4px 0 0;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.sidebar-body {
+  padding: 14px 16px 16px;
+  overflow-y: auto;
+}
+
+.section + .section {
+  margin-top: 18px;
+}
+
+.section > .pane-label {
+  margin-bottom: 8px;
+}
+
+/* --- controls ------------------------------------------------------------- */
 
 .search {
-  flex: 0 1 22rem;
-  min-width: 0;
-  padding: 0.35rem 0.5rem;
-  background: transparent;
-  border: 1px solid var(--rule);
-  border-radius: 0;
-  color: inherit;
-  font: inherit;
-}
-
-.depth {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  white-space: nowrap;
-  color: var(--dormant);
-}
-
-.depth-value,
-.scrub-value {
-  font-family: var(--mono);
-  font-size: 0.85em;
-  color: var(--ink);
-}
-
-/* A native range brings the OS accent with it. Left alone that is a bright blue in a page
-   whose only accent is oxblood, and it is the loudest thing on screen. */
-input[type="range"] {
-  appearance: none;
-  width: 7rem;
-  height: 1rem;
-  background: transparent;
-  cursor: pointer;
-}
-
-input[type="range"]::-webkit-slider-runnable-track {
-  height: 1px;
-  background: var(--rule);
-}
-
-input[type="range"]::-moz-range-track {
-  height: 1px;
-  background: var(--rule);
-}
-
-input[type="range"]::-webkit-slider-thumb {
-  appearance: none;
-  width: 9px;
-  height: 9px;
-  margin-top: -4px;
-  background: var(--ink);
-  border: 0;
-}
-
-input[type="range"]::-moz-range-thumb {
-  width: 9px;
-  height: 9px;
-  background: var(--ink);
-  border: 0;
-  border-radius: 0;
-}
-
-.results {
-  position: absolute;
-  top: 3.25rem;
-  left: 1rem;
-  z-index: 2;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  max-width: 28rem;
-  background: var(--ground);
-  border: 1px solid var(--ink);
-}
-
-.hit {
-  display: flex;
-  gap: 0.75rem;
-  align-items: baseline;
   width: 100%;
-  padding: 0.35rem 0.6rem;
-  background: none;
-  border: 0;
-  color: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--pane-line-strong);
+  border-radius: var(--control-radius);
+  background: rgba(8, 11, 16, 0.6);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+}
+
+.search::placeholder {
+  color: var(--text-faint);
+}
+
+.search:focus {
+  border-color: var(--accent-line);
+}
+
+/* A mode is a card with its own sentence, not a tab. The design gives each one a line saying
+   what that view answers, which is the difference between three words and three choices
+   someone can actually make. */
+.mode {
+  display: block;
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--pane-line);
+  border-radius: var(--control-radius);
+  background: rgba(8, 11, 16, 0.4);
+  color: var(--text);
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
 
-.hit:hover {
-  background: var(--rule);
+.mode + .mode {
+  margin-top: 6px;
 }
 
-.hit-via {
-  color: var(--dormant);
-  font-size: 0.85em;
+.mode.current {
+  border-color: var(--accent-line);
+  background: var(--accent-fill);
 }
 
-/* An annotation on the drawing rather than a band of chrome: the trail is usually two words,
-   and a full-width strip for it cost more vertical space than the graph could spare. */
-.trail {
-  position: absolute;
-  top: 3.6rem;
-  left: 1rem;
-  z-index: 1;
+.mode-name {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.mode.current .mode-name {
+  color: var(--accent);
+}
+
+.mode-note {
+  display: block;
+  margin-top: 1px;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.pill {
+  padding: 4px 10px;
+  border: 1px solid var(--pane-line);
+  border-radius: 999px;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.pill.on {
+  border-color: var(--accent-line);
+  background: var(--accent-fill);
+  color: var(--accent);
+}
+
+.pill-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
-  align-items: baseline;
-  font-size: 0.85em;
-  pointer-events: none;
+  gap: 6px;
 }
 
-.trail > * {
-  pointer-events: auto;
+.pill-group + .pill-group {
+  margin-top: 10px;
+}
+
+.pill-group > span {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 3px 0;
+  color: var(--text-2);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.depth-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.depth-value {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-faintest);
+}
+
+input[type="range"] {
+  width: 100%;
+  margin: 6px 0 0;
+}
+
+/* --- floating chrome ------------------------------------------------------ */
+
+.focus-pill {
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border-color: rgba(155, 140, 240, 0.2);
+  font-size: 12.5px;
+}
+
+.focus-pill .pane-label {
+  display: inline;
 }
 
 .crumb {
   padding: 0;
   background: none;
   border: 0;
-  color: var(--dormant);
+  color: var(--text-muted);
   font: inherit;
   cursor: pointer;
 }
 
-.crumb:not(.current)::after {
-  content: " ›";
+.crumb + .crumb::before {
+  content: "/";
+  margin: 0 6px;
+  color: var(--text-faintest);
 }
 
 .crumb.current {
   font-family: var(--display);
-  color: var(--signal);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--text);
   cursor: default;
 }
 
-.canvas {
-  min-height: 0;
+.status {
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 14px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.tool {
+  padding: 5px 10px;
+  border: 1px solid var(--pane-line);
+  border-radius: 10px;
+  background: none;
+  color: var(--text-muted);
+  font-family: var(--body);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+  cursor: pointer;
+}
+
+.tool.on {
+  border-color: var(--accent-line);
+  background: var(--accent-fill);
+  color: var(--accent);
+}
+
+.icon {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--pane-line);
+  border-radius: 999px;
+  background: none;
+  color: var(--text-faint);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* --- results, path, selected --------------------------------------------- */
+
+.results {
+  position: absolute;
+  z-index: 12;
+  left: 20px;
+  top: 132px;
+  width: 272px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--pane-line-strong);
+  border-radius: var(--control-radius);
+  background: rgba(13, 18, 25, 0.96);
+  backdrop-filter: blur(18px);
+  box-shadow: var(--shadow);
+}
+
+.hit {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hit:hover {
+  background: var(--accent-fill);
+}
+
+.hit-via {
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.hops {
+  left: 20px;
+  bottom: 20px;
+  width: 272px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hops-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px 8px;
+}
+
+.hops-title {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.hops li {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 4px 14px;
+}
+
+.hops li:last-child {
+  padding-bottom: 12px;
+}
+
+.hop-n {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--text-faintest);
+}
+
+.hop-role {
+  flex: 1 1 auto;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.hop-who {
+  color: var(--text);
+  font-size: 12.5px;
 }
 
 .card {
-  position: absolute;
-  right: 1rem;
-  bottom: 1rem;
-  z-index: 2;
-  max-width: 24rem;
-  padding: 0.75rem 1rem;
-  background: var(--ground);
-  border: 1px solid var(--ink);
+  right: 20px;
+  top: 20px;
+  width: 300px;
+  padding: 14px 16px 16px;
 }
 
 .card-name {
-  margin: 0;
+  margin: 4px 0 0;
   font-family: var(--display);
-  font-size: 1.15rem;
+  font-size: 19px;
   font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--text);
 }
 
-.card-pronouns,
-.card-tags {
-  margin: 0.15rem 0 0;
-  color: var(--dormant);
-  font-size: 0.9em;
+.card-term {
+  display: inline-block;
+  margin: 8px 8px 0 0;
+  padding: 3px 10px;
+  border: 1px solid var(--accent-line);
+  border-radius: 999px;
+  background: var(--accent-fill);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.card-pronouns {
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 .card-dates {
-  margin: 0.15rem 0 0;
+  display: flex;
+  justify-content: space-between;
+  margin: 12px 0 0;
+  padding: 8px 12px;
+  border: 1px solid var(--pane-line);
+  border-radius: var(--control-radius);
+  background: var(--pane-deep);
   font-family: var(--mono);
-  font-size: 0.85em;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.card-status {
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
 }
 
 .card-notes {
-  margin: 0.5rem 0 0;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--rule);
+  margin: 12px 0 0;
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+.card-tags {
+  margin: 10px 0 0;
+  color: var(--text-faint);
+  font-size: 11.5px;
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.action {
+  flex: 1 1 0;
+  padding: 9px 10px;
+  border: 1px solid var(--pane-line);
+  border-radius: var(--control-radius);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.action.on {
+  border-color: var(--accent-line);
+  background: var(--accent-fill);
+  color: var(--accent);
+}
+
+/* --- the signature ------------------------------------------------------- */
+
+.term {
+  position: absolute;
+  z-index: 8;
+  /* Lifted clear of the midpoint node: centred on it, the word hides the person. */
+  transform: translate(-50%, -215%);
+  padding: 10px 24px;
+  border: 1px solid var(--accent-line);
+  border-radius: 999px;
+  background: rgba(9, 14, 20, 0.78);
+  backdrop-filter: blur(10px);
+  box-shadow:
+    0 18px 44px -18px rgba(0, 0, 0, 0.9),
+    0 0 0 6px rgba(155, 140, 240, 0.05);
+  font-family: var(--display);
+  font-size: 38px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  white-space: nowrap;
+  color: var(--accent);
+  pointer-events: none;
+}
+
+.term-aside {
+  display: block;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
 }
 
 .empty {
-  padding: 2rem;
-  color: var(--dormant);
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
 }
 
 :focus-visible {
-  outline: 2px solid var(--signal);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -269,150 +646,20 @@ input[type="range"]::-moz-range-thumb {
   }
 }
 
-@media (max-width: 34rem) {
-  .bar {
-    flex-wrap: wrap;
-  }
-
+@media (max-width: 60rem) {
   .card {
-    left: 1rem;
-    right: 1rem;
-    max-width: none;
+    display: none;
   }
 }
 
-.modes {
-  display: flex;
-}
+@media (max-width: 44rem) {
+  .sidebar {
+    width: calc(100% - 40px);
+    max-height: 46%;
+  }
 
-.mode {
-  padding: 0.28rem 0.65rem;
-  background: none;
-  border: 1px solid var(--rule);
-  color: var(--dormant);
-  font: inherit;
-  cursor: pointer;
-}
-
-.mode + .mode {
-  border-left: 0;
-}
-
-.mode.current {
-  border-color: var(--ink);
-  color: var(--ink);
-}
-
-.filters {
-  position: relative;
-  color: var(--dormant);
-  font-size: 0.9em;
-}
-
-.filters > summary {
-  cursor: pointer;
-}
-
-.filters[open] > summary {
-  color: var(--ink);
-}
-
-.filter-group {
-  margin: 0;
-  padding: 0.4rem 0.6rem;
-  border: 0;
-  border-top: 1px solid var(--rule);
-}
-
-.filter-group:first-of-type {
-  border-top: 0;
-}
-
-.filter-group > legend {
-  padding: 0;
-  color: var(--dormant);
-  font-size: 0.8em;
-  text-transform: lowercase;
-}
-
-.filter-row {
-  display: flex;
-  gap: 0.4rem;
-  align-items: center;
-  color: var(--ink);
-  cursor: pointer;
-}
-
-.filter-body {
-  position: absolute;
-  right: 0;
-  z-index: 3;
-  min-width: 12rem;
-  background: var(--ground);
-  border: 1px solid var(--ink);
-}
-
-/* Section 11.4's signature moment: the derived term, set large, on the ribbon's midpoint.
-   Nothing else on the page is allowed to be this loud. */
-.term {
-  position: absolute;
-  z-index: 4;
-  /* Lifted clear of the midpoint node: centred on it, the word sat on top of the person it
-     was describing and hid them. */
-  transform: translate(-50%, -190%);
-  padding: 0.1rem 0.5rem;
-  background: var(--ground);
-  color: var(--signal);
-  font-family: var(--display);
-  font-size: clamp(1.25rem, 3.5vw, 2.25rem);
-  line-height: 1.1;
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-.term-aside {
-  display: block;
-  color: var(--dormant);
-  font-family: var(--label);
-  font-size: 0.85rem;
-  text-align: center;
-}
-
-.hops {
-  position: absolute;
-  left: 1rem;
-  bottom: 1rem;
-  z-index: 3;
-  max-width: 20rem;
-  margin: 0;
-  padding: 0.6rem 0.9rem 0.6rem 2rem;
-  background: var(--ground);
-  border: 1px solid var(--rule);
-  color: var(--dormant);
-  font-size: 0.85em;
-}
-
-.hops li + li {
-  margin-top: 0.15rem;
-}
-
-.scrubber {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  white-space: nowrap;
-}
-
-.scrub-value {
-  min-width: 2.5rem;
-  font-family: var(--mono);
-  color: var(--dormant);
-}
-
-.view > summary {
-  cursor: pointer;
-}
-
-.filter-row input[type="radio"] {
-  accent-color: var(--signal);
+  .hops,
+  .results {
+    width: calc(100% - 40px);
+  }
 }
