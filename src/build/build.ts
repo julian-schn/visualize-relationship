@@ -9,13 +9,21 @@ import { loadValidators } from "../validate/schema.ts";
 import { compile, type CompiledGraph } from "./compile.ts";
 import { assertOffline } from "./verify.ts";
 
+/** Where the four woff2 files live, relative to the repo root. */
+export const FONT_DIR = "src/viewer/fonts";
+
 /**
  * Section 11.4 wants three faces self-hosted, and section 2 forbids the page fetching
- * anything, so they are inlined as data URIs at build time. Latin subsets only: the whole
- * set of three costs about 50K, which is the difference between a considered page and a
- * page that ships a webfont CDN's worth of glyphs nobody will read.
+ * anything, so they are inlined as data URIs at build time. Latin subsets only: four files
+ * for three families cost about 70K, which is the difference between a considered page and
+ * a page that ships a webfont CDN's worth of glyphs nobody will read.
+ *
+ * Latin, not latin-ext. Google's css2 response lists the latin-ext @font-face block first,
+ * so taking the first URL gets a file with no ASCII letters in it at all and every glyph
+ * silently falls back to system-ui. tests/fonts.test.ts asserts the coverage instead of
+ * trusting the download.
  */
-const FACES = [
+export const FACES = [
   { family: "Space Grotesk", file: "space-grotesk.woff2", weight: "500" },
   { family: "Schibsted Grotesk", file: "schibsted-grotesk.woff2", weight: "400" },
   { family: "Schibsted Grotesk", file: "schibsted-grotesk-500.woff2", weight: "500" },
@@ -26,7 +34,7 @@ async function fontFaces(root: string): Promise<string> {
   const rules: string[] = [];
 
   for (const face of FACES) {
-    const bytes = await readFile(join(root, "src/viewer/fonts", face.file));
+    const bytes = await readFile(join(root, FONT_DIR, face.file));
     rules.push(
       `@font-face{font-family:"${face.family}";font-style:normal;font-weight:${face.weight};` +
         `font-display:swap;src:url(data:font/woff2;base64,${bytes.toString("base64")}) format("woff2")}`,
