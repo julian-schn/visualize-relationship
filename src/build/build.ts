@@ -16,8 +16,9 @@ import { assertOffline } from "./verify.ts";
  * page that ships a webfont CDN's worth of glyphs nobody will read.
  */
 const FACES = [
-  { family: "Fraunces", file: "fraunces.woff2", weight: "500" },
-  { family: "IBM Plex Sans Condensed", file: "plex-sans-condensed.woff2", weight: "400" },
+  { family: "Space Grotesk", file: "space-grotesk.woff2", weight: "500" },
+  { family: "Schibsted Grotesk", file: "schibsted-grotesk.woff2", weight: "400" },
+  { family: "Schibsted Grotesk", file: "schibsted-grotesk-500.woff2", weight: "500" },
   { family: "IBM Plex Mono", file: "plex-mono.woff2", weight: "400" },
 ];
 
