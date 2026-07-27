@@ -70,7 +70,9 @@ Keep the dependency count low. Justify any addition in a commit body.
   viewer already needs beats adding a second one. The runner goes away if the minimum Node
   version ever rises to one with native type stripping.
 - `ajv` for JSON Schema validation
-- `cytoscape` + `cytoscape-dagre` + `cytoscape-fcose` for the viewer
+- `cytoscape` + `cytoscape-dagre` + `cytoscape-fcose` for the viewer, and `cytoscape-svg`
+  for the SVG export in 11.3. All four are bundled into the page, so they are dependencies
+  and not devDependencies, and all four are pinned exactly.
 - `vitest` for tests
 - No UI framework. The viewer is one page. Vanilla DOM is enough and keeps the bundle small.
 
@@ -94,9 +96,10 @@ schema/                JSON Schema per record type, and for vocab.json
 src/model/             types, loaders, id helpers, date parser
 src/kinship/           derivation engine (section 8)
 src/validate/          validation rules (section 10)
-src/viewer/            the single-page app, and the three fonts in fonts/
+src/viewer/            the single-page app, and the three families in fonts/
 src/agent/             find, inbox apply, maintenance (section 13)
 src/build/             compile + inline pipeline (section 12)
+tests/                 vitest; the kinship corpus is built here, not committed as records
 
 .githooks/             git hooks (section 15)
 .github/workflows/     CI (section 15)
@@ -456,6 +459,11 @@ labels and anything numeric. Latin subsets under the OFL, self-hosted in `src/vi
 and inlined by the build, because the design links Google Fonts and section 2 forbids the
 page reaching the network.
 
+Latin, not latin-ext. Google's `css2` response lists the latin-ext `@font-face` block first,
+so taking the first URL of each family yields files with no ASCII letter in them and every
+glyph falls back to `system-ui` without anything failing. `tests/fonts.test.ts` reads the
+character map out of each shipped file and asserts the coverage, so this cannot recur.
+
 Chrome floats over a full-bleed canvas: a sidebar on the left holding search, layout, depth,
 filters and line work; a focus pill overhead; the selected person on the right; the path
 bottom-left; and what-is-shown plus the tools bottom-right. Panes float, so fitting the graph
@@ -472,9 +480,10 @@ Line work still encodes meaning, and the design kept every rule of it:
 - ended or estranged: dotted, in the faint grey
 
 **Signature element.** When two people are related, the path draws as one continuous ribbon
-in `--signal` that eases in hop by hop, with the derived kinship term set large in Fraunces
-at the midpoint. That single moment is the thing this tool is remembered for. Keep everything
-around it quiet: no gradients, no shadows, no rounded card chrome, no animated background.
+in `--accent` that eases in hop by hop, with the derived kinship term set large in Space
+Grotesk at the midpoint. That single moment is the thing this tool is remembered for. Keep
+everything around it quiet: the accent belongs to the focus, the active mode, the term and
+the ribbon, and to nothing else. No second colour, no animated background.
 
 Quality floor without announcing it: keyboard focus is always visible, `prefers-reduced-motion`
 kills the ribbon animation and the layout transitions, the panel is usable down to a phone width.
@@ -722,6 +731,6 @@ Each milestone ends with green validation, green tests and one or more commits.
 8. **Relate and the ribbon**: the signature interaction.
 9. **Timeline scrubber.**
 10. **Agent tooling**: `find`, `inbox:apply`, `agent:maintenance`, report generators.
-11. **Polish**: keyboard shortcuts, exports, dark mode, reduced motion.
+11. **Polish**: keyboard shortcuts, exports, reduced motion, visible focus.
 
 Milestones 0 through 11 are done. The build order is complete.
