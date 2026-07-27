@@ -98,6 +98,7 @@ If you want to swap any of these, write a proposal (section 13.3) first.
 ```
 AGENTS.md              this file; CLAUDE.md is a symlink to it
 README.md              short human-facing intro, under 40 lines
+LICENSE                MIT, and nothing else in it; see 16
 
 people/                one JSON file per person, filename = <id>.json
 unions/                one JSON file per union, filename = <id>.json
@@ -515,7 +516,10 @@ kills the ribbon animation and the layout transitions, the panel is usable down 
 4. Emit a single compiled graph object
 5. Bundle the viewer with esbuild, inlining CSS and fonts as base64
 6. Inject the compiled graph as `<script type="application/json" id="graph">`
-7. Write `dist/graph.html`
+7. Inject `fonts/OFL.txt` as an HTML comment, because inlining the woff2 redistributes them
+   and the OFL asks that its notice travel with the font software. esbuild is run with
+   `legalComments: "none"`, so nothing else would carry it
+8. Write `dist/graph.html`
 
 ### 12.2 Verify
 
@@ -712,6 +716,11 @@ There are exactly two documentation files and there is no documentation build.
 - `README.md`: what this is, how to build it, and where the data must not go. Under 40 lines.
   It was 30 while the repo was private and only its owner read it. A stranger needs the
   licence, the demo branch and the private-clone rule as well, and that is worth ten lines.
+
+`LICENSE` is not a third one. It is a legal instrument, it is load-bearing for everyone who
+clones the repo, and it stays pure MIT text: GitHub identifies a licence by matching the file
+against known texts, and the font carve-out that once sat below the MIT body was enough to
+make it read as "Other". That carve-out lives at the top of `src/viewer/fonts/OFL.txt`.
 
 Nothing else. No generated schema reference, no vocabulary table, no stats page, no
 changelog, no decision log. Every one of those restates something the reader can already
