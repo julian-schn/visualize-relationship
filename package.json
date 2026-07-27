@@ -3,7 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "A private, local-first graph of family and social relationships.",
+  "description": "A local-first graph of family and social relationships.",
+  "license": "MIT",
+  "author": "julian-schn",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/julian-schn/visualize-relationship.git"
+  },
   "engines": {
     "node": ">=20"
   },

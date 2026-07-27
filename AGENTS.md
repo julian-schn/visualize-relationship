@@ -19,8 +19,12 @@ the commit body that decided it, per section 16.
 A private, local-first graph of people: family lines and social relationships, with notes
 per person and an interactive viewer.
 
-It is a personal knowledge tool. Nothing is published. There is no server, no account, no
-telemetry, no hosted site.
+It is a personal knowledge tool. There is no server, no account, no telemetry, no hosted site.
+
+**The tool is published; the data never is.** This repo is public and MIT licensed, and it
+contains no real person and never will. Anyone using it for their own family keeps that in a
+private clone which never gains this remote. The two are separated because they cannot be
+un-separated: a public repo is cloned and indexed long before a mistaken push can be undone.
 
 **Goals**
 
@@ -37,11 +41,17 @@ telemetry, no hosted site.
 - A general-purpose graph database
 - Genealogical source citation and evidence management (explicitly out of scope; see 5.1)
 
-**Real people only.** Every record in `people/` on `main` describes someone who exists.
-There is deliberately no realm or fictional flag, because there is nothing to mark: invented
-people never get there. Test corpora belong in the tests or on an `agent/` branch that is
-not merged, and the moment a fictional person lands on `main` the rule has already failed,
-since nothing in the data distinguishes them afterwards.
+**Real people only, and not in this repo.** There is deliberately no realm or fictional flag,
+because there is nothing to mark: a record says nothing about whether its subject exists. That
+one fact sets both rules.
+
+In *this* repo, the public tool, `people/`, `unions/` and `relations/` stay empty. Test corpora
+belong in the tests or on an `agent/` branch that is never merged; `agent/test-corpus` is that
+branch and is published as the demo. A fictional person on `main` means the rule has already
+failed, because nothing distinguishes them afterwards.
+
+In a *private* clone, every record describes someone who exists. Nothing invented goes in
+beside them, for the same reason read the other way round.
 
 ---
 
@@ -54,7 +64,10 @@ since nothing in the data distinguishes them afterwards.
 3. **No runtime agent.** The viewer never calls an LLM. All logic the viewer needs at runtime
    (kinship derivation, path finding, layout) is ordinary code that ships in the bundle.
    Agent involvement stops at authoring time. See section 9.
-4. **Private.** Assume the repo is private and stays private. Never add anything that phones home.
+4. **Private data, public tool.** This repo is public, so assume anything committed here is
+   read by strangers. The clone holding real records is private and never gains this remote;
+   the pre-push hook in section 15.1 enforces that end of it. Never add anything that phones
+   home.
 5. **Data is the product.** Code can be rewritten. The JSON in `people/` is the thing worth
    protecting. Never destructively edit it without validation passing first.
 
@@ -84,7 +97,7 @@ If you want to swap any of these, write a proposal (section 13.3) first.
 
 ```
 AGENTS.md              this file; CLAUDE.md is a symlink to it
-README.md              short human-facing intro, under 30 lines
+README.md              short human-facing intro, under 40 lines
 
 people/                one JSON file per person, filename = <id>.json
 unions/                one JSON file per union, filename = <id>.json
@@ -601,6 +614,7 @@ land only after the human says so, and only with a script in `migrations/` that 
 
 Never, under any circumstances:
 
+- Push a record file to the public remote, or add that remote to a repo holding real people
 - Delete a person, union or relation file
 - Rewrite git history, amend a pushed commit, or force-push
 - Bypass hooks with `--no-verify`
@@ -644,7 +658,10 @@ Rules:
 The commits in this repository are the examples; read `git log`.
 
 **Branching**: work on `main` directly for data. Use `agent/<topic>` branches for anything
-touching schema or more than 10 records, and let the human merge.
+touching schema or more than 10 records, and let the human merge. `agent/test-corpus` is the
+exception that never merges: it is the published demo, it carries the fictional corpus, and
+merging it would put invented people on `main`. Fixes that belong to both go to `main` first
+and reach the corpus branch by merging `main` into it.
 
 ---
 
@@ -658,8 +675,11 @@ be idempotent and must run as part of `npm install` via a `prepare` script.
 
 - **pre-commit**: run `typecheck` and `validate`. Fail if either fails.
 - **commit-msg**: reject anything that is not a valid Conventional Commit with a known scope.
-- **pre-push**: full `build` plus `test`. This is the last gate before anything leaves the
-  machine.
+- **pre-push**: refuse to push a record to the public remote, then full `build` plus `test`.
+  This is the last gate before anything leaves the machine, and the record check runs first
+  because it is the only one guarding something that cannot be undone. It reads the refs being
+  pushed from stdin rather than trusting the checked-out branch, and exempts
+  `agent/test-corpus`, whose people are invented and meant to be public.
 
 Hooks must be fast. If pre-commit exceeds about two seconds, cache the parse.
 
@@ -689,7 +709,9 @@ There are exactly two documentation files and there is no documentation build.
 
 - `AGENTS.md`: this file, the spec and the rulebook. **If you change how the system works,
   change this file in the same commit.** A spec that lags the code is worse than no spec.
-- `README.md`: what this is and how to build it. Under 30 lines.
+- `README.md`: what this is, how to build it, and where the data must not go. Under 40 lines.
+  It was 30 while the repo was private and only its owner read it. A stranger needs the
+  licence, the demo branch and the private-clone rule as well, and that is worth ten lines.
 
 Nothing else. No generated schema reference, no vocabulary table, no stats page, no
 changelog, no decision log. Every one of those restates something the reader can already

@@ -1,6 +1,32 @@
 #!/bin/sh
 set -eu
 
+# The tool is public; the people in it are not. A record that reaches the published remote
+# cannot be recalled — a public repo is cloned and indexed long before anyone notices. So the
+# check is here rather than in a paragraph someone has to remember, per section 9.
+#
+# agent/test-corpus is exempt because it *is* the published demo and its people are invented.
+# A seatbelt, not a lock: --no-verify defeats it, which section 13.4 already forbids.
+PUBLIC_REMOTE="github.com/julian-schn/visualize-relationship"
+
+if printf '%s' "${2-}" | grep -qF "$PUBLIC_REMOTE"; then
+  # The refs actually being pushed, from stdin, not the branch that happens to be checked
+  # out: `git push origin some-other-branch` must be caught too. Nothing else reads stdin.
+  while read -r _local_ref local_sha remote_ref _remote_sha; do
+    # A deletion pushes the null sha and carries no tree.
+    case "$local_sha" in *[!0]*) ;; *) continue ;; esac
+    case "$remote_ref" in refs/heads/agent/test-corpus) continue ;; esac
+
+    if git ls-tree -r --name-only "$local_sha" -- people unions relations notes |
+      grep -qv '\.gitkeep$'; then
+      echo "refusing to push $remote_ref: it carries records and the target is the" >&2
+      echo "public tool repo. Your own data belongs in a private clone that never has" >&2
+      echo "this remote; see the README." >&2
+      exit 1
+    fi
+  done
+fi
+
 npm run build
 npm test
 
