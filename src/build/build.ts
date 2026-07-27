@@ -44,6 +44,21 @@ async function fontFaces(root: string): Promise<string> {
   return rules.join("\n");
 }
 
+/**
+ * The OFL requires its notice and licence to travel with the font software wherever it goes,
+ * and inlining the four woff2 as data URIs redistributes them: dist/graph.html is committed
+ * and anyone who clones the repo gets a copy. OFL.txt covers the files in the source tree,
+ * not the ones inside the page, so the page carries its own.
+ *
+ * An HTML comment rather than markup, because it is legal text and not content. Section 12.2
+ * is unaffected: verifyOffline strips comments before it scans for URLs, so the OFL's own
+ * scripts.sil.org address cannot trip no-remote-url.
+ */
+async function fontLicence(root: string): Promise<string> {
+  const ofl = await readFile(join(root, FONT_DIR, "OFL.txt"), "utf8");
+  return `<!--\n${ofl.trim()}\n-->`;
+}
+
 export interface BuildResult {
   html: string;
   graph: CompiledGraph;
@@ -59,7 +74,7 @@ function escapeForScriptBlock(json: string): string {
   return json.replace(/<\//g, "<\\/");
 }
 
-function page(graph: CompiledGraph, css: string, js: string): string {
+function page(graph: CompiledGraph, css: string, js: string, licence: string): string {
   // The graph is a JSON block rather than a fetch: section 2, and the single most common
   // way a file:// page breaks.
   return `<!doctype html>
@@ -68,6 +83,7 @@ function page(graph: CompiledGraph, css: string, js: string): string {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Relationship graph</title>
+${licence}
 <style>
 ${css}
 </style>
@@ -120,7 +136,7 @@ export async function buildGraphPage(root: string, today: string): Promise<Build
   const js = bundled.outputFiles[0]?.text;
   if (js === undefined) throw new Error("esbuild produced no bundle");
 
-  const html = page(graph, css.trim(), js.trim());
+  const html = page(graph, css.trim(), js.trim(), await fontLicence(root));
 
   // Section 12.2: assert against the real output, whatever esbuild said.
   assertOffline(html);
