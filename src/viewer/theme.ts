@@ -1,15 +1,13 @@
 import type { StylesheetStyle } from "cytoscape";
 
 /**
- * Section 11.4. Line work encodes meaning rather than decorating it, so the reference is
- * drafting and field notation: no gradients, no shadows, no rounded card chrome.
+ * Section 11.4, from the Graph Viewer Redesign. Cytoscape paints to canvas and cannot read a
+ * CSS custom property, so these five repeat what style.css holds for the surrounding panes.
  *
- * Cytoscape draws to canvas and cannot read CSS custom properties, so the tokens are
- * repeated here. style.css holds the same five values for the surrounding page.
+ * One set, not two: the design is a dark design, and section 11.4 rules out inventing a light
+ * variant with nothing to check it against.
  */
-/* From the Graph Viewer Redesign. Cytoscape paints to canvas and cannot read a custom
-   property, so these repeat what style.css holds for the surrounding panes. */
-const LIGHT = {
+export const TOKENS = {
   ground: "#0d1219",
   ink: "#e8eef5",
   rule: "rgba(159,180,205,0.22)",
@@ -17,21 +15,8 @@ const LIGHT = {
   dormant: "#62748a",
 };
 
-/** The design is a dark design; there is no second appearance to invert into. */
-const DARK = LIGHT;
-
-export type Appearance = "light" | "dark";
-
-export function tokensFor(appearance: Appearance): typeof LIGHT {
-  return appearance === "dark" ? DARK : LIGHT;
-}
-
-export function cytoscapeStyle(
-  mode: "lineage" | "social" | "circle" = "lineage",
-  appearance: Appearance = "light",
-): StylesheetStyle[] {
-  const { ground: GROUND, ink: INK, rule: RULE, signal: SIGNAL, dormant: DORMANT } =
-    tokensFor(appearance);
+export function cytoscapeStyle(mode: "lineage" | "social" | "circle" = "lineage"): StylesheetStyle[] {
+  const { ink: INK, rule: RULE, signal: SIGNAL, dormant: DORMANT } = TOKENS;
 
   return [
     {
@@ -41,8 +26,8 @@ export function cytoscapeStyle(
         "background-opacity": 0.86,
         "border-color": RULE,
         "border-width": 1,
-        // Square: section 11.4 rules out rounded card chrome, and a person on a drafting
-        // chart is a plate with corners, not a UI card.
+        // The panes carry the design's 18px radius; a person is a plate on the canvas and
+        // takes a much tighter corner, so it does not read as another floating card.
         shape: "round-rectangle",
         // Not 'label': that sizing mode is deprecated and leaves most nodes with no
         // computed box, so they never paint. A fixed plate also suits the drafting look.
